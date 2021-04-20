@@ -39,6 +39,7 @@ open class CollectionFlowLayoutSizingStrategy {
 
     private var cachedSizes: [Int: CGSize] = [:]
     private func cachedSize(forElementAt index: Int) -> CGSize? {
+        return nil;
         switch sizingMode {
         case .aspect:
             return cachedSizes[index]
@@ -69,10 +70,12 @@ open class CollectionFlowLayoutSizingStrategy {
         case let .aspect(ratio):
             let size = CGSize(width: width, height: width * ratio)
             cachedSizes[index] = size
+            print("ZXC: \(#function); \(index); \(size.height)")
             return size
         case let .fixed(height):
             let size = CGSize(width: width, height: height)
             cachedSizes[index] = size
+            print("ZXC: \(#function); \(index); \(size.height)")
             return size
         case .automatic(_, let prototype):
             let targetView: UIView?
@@ -91,6 +94,7 @@ open class CollectionFlowLayoutSizingStrategy {
                 ?? .zero
 
             cachedSizes[index] = size
+            print("ZXC: \(#function); \(index); \(size.height)")
             return size
         }
     }

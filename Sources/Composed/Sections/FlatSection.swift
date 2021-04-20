@@ -410,19 +410,17 @@ extension FlatSection: SectionProviderUpdateDelegate {
         }
 
         performBatchUpdates { _ in
+            for (section, index) in zip(sections, indexes) {
+                section.updateDelegate = self
 
-        for (section, index) in zip(sections, indexes) {
-            section.updateDelegate = self
+                let sectionIndex = index + providerSectionIndex
+                self.sections.insert(section, at: sectionIndex)
+                let firstSectionIndex = self.indexForFirstElement(of: section)!
 
-            let sectionIndex = index + providerSectionIndex
-            self.sections.insert(section, at: sectionIndex)
-            let firstSectionIndex = self.indexForFirstElement(of: section)!
-
-            (firstSectionIndex..<firstSectionIndex + section.numberOfElements).forEach { elementIndex in
-                updateDelegate?.section(self, didInsertElementAt: elementIndex)
+                (firstSectionIndex..<firstSectionIndex + section.numberOfElements).forEach { elementIndex in
+                    updateDelegate?.section(self, didInsertElementAt: elementIndex)
+                }
             }
-        }
-
         }
     }
 

@@ -25,27 +25,29 @@ extension CollectionCoordinator: UICollectionViewDelegateFlowLayout {
         let suggested = layout.estimatedItemSize == .zero ? layout.itemSize : layout.estimatedItemSize
         guard let section = sectionProvider.sections[indexPath.section] as? CollectionFlowLayoutHandler else { return suggested }
         let metrics = self.metrics(for: section, collectionView: collectionView, layout: layout)
-        return section.sizeForItem(at: indexPath.item, suggested: suggested, metrics: metrics, environment: environment(collectionView: collectionView, layout: layout))
+        let size = section.sizeForItem(at: indexPath.item, suggested: suggested, metrics: metrics, environment: environment(collectionView: collectionView, layout: layout))
+        print("ZXC: \(#function); \(indexPath); \(size)")
+        return size
     }
 
-    public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
-        guard let layout = collectionViewLayout as? UICollectionViewFlowLayout else { return .zero }
-        guard let section = sectionProvider.sections[section] as? CollectionFlowLayoutHandler else { return layout.sectionInset }
-        return metrics(for: section, collectionView: collectionView, layout: layout).contentInsets
-    }
-
-    public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        guard let layout = collectionViewLayout as? UICollectionViewFlowLayout else { return 0 }
-        guard let section = sectionProvider.sections[section] as? CollectionFlowLayoutHandler else { return layout.minimumLineSpacing }
-        return metrics(for: section, collectionView: collectionView, layout: layout).minimumLineSpacing
-    }
-
-    public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
-        guard let layout = collectionViewLayout as? UICollectionViewFlowLayout else { return 0 }
-        guard let section = sectionProvider.sections[section] as? CollectionFlowLayoutHandler else { return layout.minimumInteritemSpacing }
-        return metrics(for: section, collectionView: collectionView, layout: layout).minimumInteritemSpacing
-    }
-
+//    public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
+//        guard let layout = collectionViewLayout as? UICollectionViewFlowLayout else { return .zero }
+//        guard let section = sectionProvider.sections[section] as? CollectionFlowLayoutHandler else { return layout.sectionInset }
+//        return metrics(for: section, collectionView: collectionView, layout: layout).contentInsets
+//    }
+//
+//    public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
+//        guard let layout = collectionViewLayout as? UICollectionViewFlowLayout else { return 0 }
+//        guard let section = sectionProvider.sections[section] as? CollectionFlowLayoutHandler else { return layout.minimumLineSpacing }
+//        return metrics(for: section, collectionView: collectionView, layout: layout).minimumLineSpacing
+//    }
+//
+//    public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
+//        guard let layout = collectionViewLayout as? UICollectionViewFlowLayout else { return 0 }
+//        guard let section = sectionProvider.sections[section] as? CollectionFlowLayoutHandler else { return layout.minimumInteritemSpacing }
+//        return metrics(for: section, collectionView: collectionView, layout: layout).minimumInteritemSpacing
+//    }
+//
     public func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
         guard let layout = collectionViewLayout as? UICollectionViewFlowLayout else { return .zero }
         guard let section = sectionProvider.sections[section] as? CollectionFlowLayoutHandler else { return layout.headerReferenceSize }

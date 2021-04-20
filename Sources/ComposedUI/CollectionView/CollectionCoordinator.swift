@@ -281,7 +281,7 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
          have not yet been reflected in the data layer.
          */
         debugLog("Layout out collection view, if needed")
-        collectionView.layoutIfNeeded()
+//        collectionView.layoutIfNeeded()
         debugLog("Collection view has been laid out")
         collectionView.performBatchUpdates({
             debugLog("Starting batch updates")
@@ -289,7 +289,9 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
 
             updates(changesReducer)
 
-            prepareSections()
+            defer {
+                prepareSections()
+            }
 
             guard let changeset = changesReducer.endUpdating() else {
                 assertionFailure("Calls to `beginUpdating` must be balanced with calls to `endUpdating`")
@@ -299,7 +301,7 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
             debugLog("Deleting sections \(changeset.groupsRemoved.sorted(by: >))")
             collectionView.deleteSections(IndexSet(changeset.groupsRemoved))
 
-            debugLog("Deleting items \(changeset.elementsRemoved.sorted(by: >))")
+            print("ZXC: Deleting items \(changeset.elementsRemoved.sorted(by: >))")
             collectionView.deleteItems(at: Array(changeset.elementsRemoved))
 
             debugLog("Reloaded sections \(changeset.groupsUpdated.sorted(by: >))")
@@ -423,6 +425,7 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         guard isPerformingBatchedUpdates else {
             prepareSections()
             collectionView.insertItems(at: indexPaths)
+            collectionView.layoutIfNeeded()
             return
         }
 
@@ -437,6 +440,7 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         guard isPerformingBatchedUpdates else {
             prepareSections()
             collectionView.deleteItems(at: indexPaths)
+//            collectionView.layoutIfNeeded()
             return
         }
 
@@ -528,20 +532,21 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         }
 
         debugLog("Section \(sectionIndex) invalidated header")
-        collectionView.performBatchUpdates {
+//        collectionView.performBatchUpdates {
             debugLog("Performing batch updates to update header in section \(sectionIndex)")
             let context = UICollectionViewFlowLayoutInvalidationContext()
             context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: [IndexPath(item: 0, section: sectionIndex)])
-            self.invalidateLayout(with: context)
-        } completion: { [weak section] isFinished in
-            self.debugLog("Performing batch updates completed to update header in section \(sectionIndex). isFinished = \(isFinished)")
-            guard let section = section else { return }
+//            self.invalidateLayout(with: context)
+        self.invalidateLayout()
+//        } completion: { [weak section] isFinished in
+//            self.debugLog("Performing batch updates completed to update header in section \(sectionIndex). isFinished = \(isFinished)")
+//            guard let section = section else { return }
             guard let headerView = self.collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex)) else { return }
 
             if let header = elementsProvider.header, header.kind.rawValue == UICollectionView.elementKindSectionHeader {
                 header.configure(headerView, sectionIndex, section)
             }
-        }
+//        }
     }
 
     public func mappingDidInvalidateFooter(at sectionIndex: Int) {
@@ -614,12 +619,26 @@ extension CollectionCoordinator: UICollectionViewDataSource {
         let cellElement = elements.cell(for: indexPath.item)
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellElement.reuseIdentifier, for: indexPath)
 
+        print("[CollectionCoordinator] " + #function + " \(indexPath), \(cell)")
+        debugLog(#function + " \(indexPath), \(cell)")
+
         if let handler = sectionProvider.sections[indexPath.section] as? EditingHandler {
             if let handler = sectionProvider.sections[indexPath.section] as? CollectionEditingHandler {
                 handler.didSetEditing(collectionView.isEditing, at: indexPath.item, cell: cell, animated: false)
             } else {
                 handler.didSetEditing(collectionView.isEditing, at: indexPath.item)
             }
+        }
+
+        print("ZXC: \(#function) indexPath.item: \(indexPath.item); cell: \(cell)")
+
+        if
+            "\(elements)".contains("FlatUICollectionViewSectionElementsProvider"),
+            "\(cell)".contains("TextDisclosureCollectionViewCell")
+//            ,(elements.numberOfElements - 1 != indexPath.item)
+        {
+            print("ZXC: Text disclosure for \(indexPath.item)")
+            print("This is a bug")
         }
 
         let section = mapper.provider.sections[indexPath.section]

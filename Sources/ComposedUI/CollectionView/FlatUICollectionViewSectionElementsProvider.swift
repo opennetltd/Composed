@@ -67,6 +67,7 @@ open class FlatUICollectionViewSectionElementsProvider: UICollectionViewSectionE
     }
 
     open func cell(for index: Int) -> CollectionCellElement {
+        print("[CollectionCoordinator] FlatUICollectionViewSectionElementsProvider", #function, index)
         guard let (section, offset) = flatSection?.sectionForElementIndex(index) else {
             fatalError("No section for index \(index) exists")
         }
@@ -74,6 +75,8 @@ open class FlatUICollectionViewSectionElementsProvider: UICollectionViewSectionE
         guard let collectionSectionProvider = section as? UICollectionViewSection else {
             fatalError("Child must conform to `CollectionSectionProvider`")
         }
+
+        print("[CollectionCoordinator]", section)
 
         let indexInSection = index - offset
         let collectionSection = collectionSectionProvider.collectionViewElementsProvider(with: traitCollection)

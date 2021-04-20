@@ -391,7 +391,9 @@ extension ComposedSectionProvider {
     @discardableResult
     public func insert(_ newSection: Section, before existingSection: Section) -> Int? {
         guard let newIndex = firstIndex(of: existingSection) else { return nil }
-        
+
+        print("[CollectionCoordinator] Inserting \(newSection) at \(newIndex)")
+
         insert(newSection, at: newIndex)
         
         return newIndex
