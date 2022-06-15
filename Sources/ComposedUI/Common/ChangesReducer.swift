@@ -70,40 +70,47 @@ internal struct ChangesReducer: CustomReflectable {
             return nil
         }
 
-        var changeset = self.changeset
-        let updatedGroups = changeset.groupsRemoved.intersection(changeset.groupsInserted)
-        updatedGroups.forEach { updatedGroup in
-            changeset.groupsRemoved.remove(updatedGroup)
-            changeset.groupsInserted.remove(updatedGroup)
-            changeset.groupsUpdated.insert(updatedGroup)
-        }
-        let updatedElements = changeset.elementsRemoved.intersection(changeset.elementsInserted)
-        updatedElements.forEach { updatedElement in
-            changeset.elementsRemoved.remove(updatedElement)
-            changeset.elementsInserted.remove(updatedElement)
-            changeset.elementsUpdated.insert(updatedElement)
-        }
+        let changeset = self.changeset
+        // We don't do any coalescing of sections; reloading a section requires
+        // the number of elements in the section to not have changed.
+//        let updatedElements = changeset.elementsRemoved.intersection(changeset.elementsInserted)
+//        updatedElements.forEach { updatedElement in
+//            changeset.elementsRemoved.remove(updatedElement)
+//            changeset.elementsInserted.remove(updatedElement)
+//            changeset.elementsUpdated.insert(updatedElement)
+//        }
         self.changeset = Changeset()
         return changeset
     }
 
     internal mutating func insertGroups(_ groups: IndexSet) {
         groups.forEach { insertedGroup in
-            let insertedGroup = insertedGroup + changeset.groupsUpdated.filter { $0 >= insertedGroup }.count
-
             changeset.groupsInserted = Set(changeset.groupsInserted.map { existingInsertedGroup in
+                var existingInsertedGroup = existingInsertedGroup
+
                 if existingInsertedGroup >= insertedGroup {
-                    return existingInsertedGroup + 1
+                    existingInsertedGroup += 1
                 }
 
                 return existingInsertedGroup
             })
 
-            if changeset.groupsRemoved.remove(insertedGroup) != nil {
-                changeset.groupsUpdated.insert(insertedGroup)
-            } else {
-                changeset.groupsInserted.insert(insertedGroup)
-            }
+            changeset.groupsInserted.insert(insertedGroup)
+//            let insertedGroup = insertedGroup + changeset.groupsUpdated.filter { $0 >= insertedGroup }.count
+//
+//            changeset.groupsInserted = Set(changeset.groupsInserted.map { existingInsertedGroup in
+//                if existingInsertedGroup >= insertedGroup {
+//                    return existingInsertedGroup + 1
+//                }
+//
+//                return existingInsertedGroup
+//            })
+//
+//            if changeset.groupsRemoved.remove(insertedGroup) != nil {
+//                changeset.groupsUpdated.insert(insertedGroup)
+//            } else {
+//                changeset.groupsInserted.insert(insertedGroup)
+//            }
 
             changeset.elementsInserted = Set(changeset.elementsInserted.map { insertedIndexPath in
                 var insertedIndexPath = insertedIndexPath
@@ -137,42 +144,71 @@ internal struct ChangesReducer: CustomReflectable {
 
     internal mutating func removeGroups(_ groups: IndexSet) {
         groups.sorted(by: >).forEach { removedGroup in
-            var removedGroup = removedGroup
             let groupsInsertedBefore = changeset.groupsInserted.filter { $0 < removedGroup }.count
+            let originalRemovedGroup = removedGroup
+            let removedGroup = transformSection(removedGroup) - groupsInsertedBefore
 
-            if changeset.groupsInserted.remove(removedGroup) != nil || changeset.groupsUpdated.remove(removedGroup) != nil {
-                changeset.groupsInserted = Set(changeset.groupsInserted.map { insertedGroup in
-                    if insertedGroup > removedGroup {
-                        return insertedGroup - 1
-                    }
+            print(originalRemovedGroup, "=>", removedGroup)
 
-                    return insertedGroup
-                })
-            } else if changeset.groupsInserted.remove(removedGroup - groupsInsertedBefore) != nil {
-                changeset.groupsUpdated.insert(removedGroup - groupsInsertedBefore)
-            } else {
-                changeset.groupsInserted = Set(changeset.groupsInserted.map { insertedGroup in
-                    if insertedGroup > removedGroup {
-                        return insertedGroup - 1
-                    }
+//            changeset.groupsRemoved.insert(removedGroup)
 
-                    return insertedGroup
-                })
+            let isInInserted = changeset.groupsInserted.contains(removedGroup)
+//            let originalWasInInserted = changeset.groupsInserted.contains(originalRemovedGroup)
 
-                let availableSpaces = (0..<Int.max)
-                    .lazy
-                    .filter { [groupsRemoved = changeset.groupsRemoved] in
-                        return !groupsRemoved.contains($0)
-                    }
-                let availableSpaceIndex = availableSpaces.index(availableSpaces.startIndex, offsetBy: removedGroup)
-                removedGroup = availableSpaces[availableSpaceIndex]
-
-                changeset.groupsRemoved.insert(removedGroup)
+            defer {
+                if !isInInserted {
+                    changeset.groupsRemoved.insert(removedGroup)
+                }
             }
 
-            changeset.elementsRemoved = Set(changeset.elementsRemoved.filter { $0.section != removedGroup })
+            changeset.groupsInserted = Set(changeset.groupsInserted.compactMap { existingInsertedGroup in
+                guard existingInsertedGroup != originalRemovedGroup else { return nil }
 
-            changeset.elementsUpdated = Set(changeset.elementsUpdated.filter { $0.section != removedGroup })
+                if existingInsertedGroup > originalRemovedGroup {
+                    return existingInsertedGroup - 1
+                }
+
+                return existingInsertedGroup
+            })
+
+//            var removedGroup = removedGroup
+//            let groupsInsertedBefore = changeset.groupsInserted.filter { $0 < removedGroup }.count
+
+//            if changeset.groupsInserted.remove(removedGroup) != nil || changeset.groupsUpdated.remove(removedGroup) != nil {
+//                changeset.groupsInserted = Set(changeset.groupsInserted.map { insertedGroup in
+//                    if insertedGroup > removedGroup {
+//                        return insertedGroup - 1
+//                    }
+//
+//                    return insertedGroup
+//                })
+//            } else if changeset.groupsInserted.remove(removedGroup - groupsInsertedBefore) != nil {
+//                changeset.groupsUpdated.insert(removedGroup - groupsInsertedBefore)
+//            } else {
+
+//                let availableSpaces = (0..<Int.max)
+//                    .lazy
+//                    .filter { [groupsRemoved = changeset.groupsRemoved, groupsInserted = changeset.groupsInserted] in
+//                        return !groupsRemoved.contains($0) || groupsInserted.contains($0)
+//                    }
+//                let availableSpaceIndex = availableSpaces.index(availableSpaces.startIndex, offsetBy: removedGroup)
+//                removedGroup = availableSpaces[availableSpaceIndex]
+////                removedGroup = transformSection(removedGroup)
+//
+//            print("removedGroup", removedGroup)
+//
+//                changeset.groupsRemoved.insert(removedGroup)
+//
+//                changeset.groupsInserted = Set(changeset.groupsInserted.map { insertedGroup in
+//                    if insertedGroup > removedGroup {
+//                        return insertedGroup - 1
+//                    }
+//
+//                    return insertedGroup
+//                })
+//            }
+
+            changeset.elementsRemoved = Set(changeset.elementsRemoved.filter { $0.section != removedGroup })
 
             changeset.elementsInserted = Set(changeset.elementsInserted.compactMap { insertedIndexPath in
                 guard insertedIndexPath.section != removedGroup else { return nil }
@@ -206,7 +242,6 @@ internal struct ChangesReducer: CustomReflectable {
 
     internal mutating func insertElements(at indexPaths: [IndexPath]) {
         indexPaths.forEach { insertedIndexPath in
-            guard !changeset.groupsUpdated.contains(insertedIndexPath.section) else { return }
             guard !changeset.groupsInserted.contains(insertedIndexPath.section) else { return }
 
             changeset.elementsInserted = Set(changeset.elementsInserted.map { existingInsertedIndexPath in
@@ -236,22 +271,14 @@ internal struct ChangesReducer: CustomReflectable {
             let originalRemovedIndexPath = removedIndexPath
             let removedIndexPath = transformIndexPath(removedIndexPath)
 
-            guard !changeset.groupsInserted.contains(removedIndexPath.section), !changeset.groupsUpdated.contains(removedIndexPath.section) else { return }
-
             let isInInserted = changeset.elementsInserted.contains(removedIndexPath)
             let originalWasInInserted = changeset.elementsInserted.contains(originalRemovedIndexPath)
 
             defer {
                 if !isInInserted {
                     changeset.elementsRemoved.insert(removedIndexPath)
-                } else if removedIndexPath.item != originalRemovedIndexPath.item, !originalWasInInserted {
-                    changeset.elementsUpdated.insert(removedIndexPath)
                 }
             }
-
-            changeset.elementsUpdated = Set(changeset.elementsUpdated.filter { existingUpdatedIndexPath in
-                return existingUpdatedIndexPath != originalRemovedIndexPath
-            })
 
             changeset.elementsInserted = Set(changeset.elementsInserted.compactMap { existingInsertedIndexPath in
                 guard existingInsertedIndexPath.section == removedIndexPath.section else {
@@ -279,10 +306,9 @@ internal struct ChangesReducer: CustomReflectable {
 
             let updatedElement = transformIndexPath(updatedElement)
 
-            if !changeset.groupsInserted.contains(updatedElement.section),
-               !changeset.groupsUpdated.contains(updatedElement.section)
-            {
-                changeset.elementsUpdated.insert(updatedElement)
+            if !changeset.groupsInserted.contains(updatedElement.section) {
+                changeset.elementsRemoved.insert(updatedElement)
+                changeset.elementsInserted.insert(updatedElement)
             }
         }
     }

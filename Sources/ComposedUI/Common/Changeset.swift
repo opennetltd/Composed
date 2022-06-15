@@ -16,9 +16,11 @@ public struct Changeset {
 
     public var groupsInserted: Set<Int> = []
     public var groupsRemoved: Set<Int> = []
+    @available(*, deprecated, message: "Decompose in to a delete and insert.")
     public var groupsUpdated: Set<Int> = []
     public var elementsRemoved: Set<IndexPath> = []
     public var elementsInserted: Set<IndexPath> = []
     public var elementsMoved: Set<Move> = []
+    @available(*, deprecated, message: "Decompose in to a delete and insert.")
     public var elementsUpdated: Set<IndexPath> = []
 }

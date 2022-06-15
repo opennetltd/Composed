@@ -1641,6 +1641,19 @@ final class ChangesReducerTests: XCTestCase {
         var changesReducer = ChangesReducer()
         changesReducer.beginUpdating()
 
+        /**
+         Start with:
+
+         - A
+         */
+
+        /**
+         Become:
+
+         - A
+         - B
+         */
+
         AssertApplyingUpdates(
             { changesReducer in
                 changesReducer.insertGroups([1])
@@ -1654,6 +1667,14 @@ final class ChangesReducerTests: XCTestCase {
                     ]
                 )
             })
+
+        /**
+         Become:
+
+         - A
+         - B
+         - C
+         */
 
         AssertApplyingUpdates(
             { changesReducer in
@@ -1669,6 +1690,13 @@ final class ChangesReducerTests: XCTestCase {
                     ]
                 )
             })
+
+        /**
+         Become:
+
+         - A
+         - B
+         */
 
         AssertApplyingUpdates(
             { changesReducer in
@@ -1854,7 +1882,13 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsInserted,
+                    [
+                        0,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
                     [
                         0,
                     ]
@@ -2169,6 +2203,53 @@ final class ChangesReducerTests: XCTestCase {
                         3,
                     ]
                 )
+            })
+    }
+
+    func testSportyCrash2() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        /**
+         Assumed to start with 4 sections
+         */
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([4])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsInserted, [4])
+            })
+        
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([5])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsInserted, [4, 5])
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([2])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsInserted, [3, 4])
+                XCTAssertEqual(changeset.groupsRemoved, [2])
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([2])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsInserted, [2, 3])
+                XCTAssertEqual(changeset.groupsRemoved, [2, 3])
             })
     }
 

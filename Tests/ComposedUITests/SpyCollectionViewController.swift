@@ -25,7 +25,12 @@ final class SpyCollectionViewController: UICollectionViewController {
 
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         requestedIndexPaths.append(indexPath)
-        return collectionView.dequeueReusableCell(withReuseIdentifier: "UICollectionViewCell", for: indexPath)
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "UICollectionViewCell", for: indexPath)
+        cell.contentView.subviews.forEach { $0.removeFromSuperview() }
+        let label = UILabel()
+        label.text = data[indexPath.section][indexPath.row]
+        cell.contentView.addSubview(label)
+        return cell
     }
 
     override func numberOfSections(in collectionView: UICollectionView) -> Int {

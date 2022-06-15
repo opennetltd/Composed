@@ -4,38 +4,15 @@ import UIKit
 /// Tests that are validating the logic of `UICollectionView`, without utilising anything from `Composed`/`ComposedUI`.
 final class UICollectionViewTests: XCTestCase {
     func testReloadDataInBatchUpdate() throws {
-        try XCTSkipIf(true, "This test will purposefully fail; it is validating that `reloadData` should not be called within `performBatchUpdates`.")
+        XCTExpectFailure("It is expected that calling `reloadData` is not supported within `performBatchUpdates`")
 
-        final class CollectionViewController: UICollectionViewController {
-            var data: [[String]] = []
-
-            override func viewDidLoad() {
-                super.viewDidLoad()
-
-                collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "UICollectionViewCell")
-            }
-
-            override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-                collectionView.dequeueReusableCell(withReuseIdentifier: "UICollectionViewCell", for: indexPath)
-            }
-
-            override func numberOfSections(in collectionView: UICollectionView) -> Int {
-                data.count
-            }
-
-            override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-                data[section].count
-            }
-        }
-
-        let viewController = CollectionViewController(collectionViewLayout: UICollectionViewFlowLayout())
-        viewController.data = [
+        let viewController = SpyCollectionViewController()
+        viewController.applyInitialData([
             [
                 "0, 0",
                 "0, 1",
             ]
-        ]
-        viewController.loadViewIfNeeded()
+        ])
 
         viewController.collectionView.performBatchUpdates {
             viewController.data.append(["1, 0"])
@@ -44,42 +21,16 @@ final class UICollectionViewTests: XCTestCase {
     }
 
     func testUpdatingBeforeBatchUpdatesWhenViewNeedsLayout() throws {
-        try XCTSkipIf(true, "This test will purposefully fail; it is validating that `performBatchUpdates` will crash when changes are applied before being called when the layout has not been updated.")
+        XCTExpectFailure("It is expected that `performBatchUpdates` will crash when the data-side of the changes are applied before the call.")
 
-        final class CollectionViewController: UICollectionViewController {
-            var data: [[String]] = []
-
-            override func viewDidLoad() {
-                super.viewDidLoad()
-
-                collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "UICollectionViewCell")
-            }
-
-            override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-                collectionView.dequeueReusableCell(withReuseIdentifier: "UICollectionViewCell", for: indexPath)
-            }
-
-            override func numberOfSections(in collectionView: UICollectionView) -> Int {
-                data.count
-            }
-
-            override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-                data[section].count
-            }
-        }
-
-        let viewController = CollectionViewController(collectionViewLayout: UICollectionViewFlowLayout())
-        viewController.data = [
+        let viewController = SpyCollectionViewController()
+        viewController.applyInitialData([
             [
                 "0, 0",
                 "0, 1",
             ]
-        ]
-        viewController.loadViewIfNeeded()
+        ])
 
-        // Uncommenting this line allows the tests to pass because it ensures the layout is
-        // updated before `performBatchUpdates` has been called
-//        viewController.collectionView.layoutIfNeeded()
         viewController.data.append(["1, 0"])
 
         viewController.collectionView.performBatchUpdates {
@@ -89,7 +40,10 @@ final class UICollectionViewTests: XCTestCase {
 
     /// A test to validate that element reloads are handled before section deletes.
     func testElementReloadsAreHandledBeforeRemoves() {
+        let window = UIWindow(frame: CGRect(origin: .zero, size: CGSize(width: 10_000, height: 10_000)))
         let viewController = SpyCollectionViewController()
+        window.rootViewController = viewController
+        window.makeKeyAndVisible()
         viewController.applyInitialData([
             ["0, 0", "0, 1", "0, 2"],
         ])
@@ -103,12 +57,54 @@ final class UICollectionViewTests: XCTestCase {
          */
         viewController.collectionView.performBatchUpdates({
             viewController.data[0].remove(at: 1)
-            viewController.data[0][1] = "0, 1 (updated)"
+            viewController.data[0][0] = "0, 0 (updated)"
+            viewController.data[0][1] = "0, 2 (updated)"
             viewController.collectionView.reloadItems(at: [
                 IndexPath(item: 0, section: 0),
                 IndexPath(item: 2, section: 0),
             ])
             viewController.collectionView.deleteItems(at: [
+                IndexPath(item: 1, section: 0),
+            ])
+        }, completion: { _ in
+            print(viewController.collectionView.visibleCells.map(\.contentView.subviews))
+            XCTAssertEqual(viewController.requestedIndexPaths, [
+                IndexPath(item: 0, section: 0),
+                // This _should_ include item 1, but it isn't included and this
+                // appears to be a bug in `UICollectionView`.
+//                IndexPath(item: 1, section: 0),
+            ])
+            callsCompletionExpectations.fulfill()
+        })
+
+        waitForExpectations(timeout: 1)
+
+        _ = window
+    }
+
+    /// A test to validate that element reloads are handled before section deletes.
+    func testSimulatingReloadWithRemoveAndInsert() {
+        let window = UIWindow(frame: CGRect(origin: .zero, size: CGSize(width: 10_000, height: 10_000)))
+        let viewController = SpyCollectionViewController()
+        window.rootViewController = viewController
+        window.makeKeyAndVisible()
+        viewController.applyInitialData([
+            ["0, 0", "0, 1", "0, 2"],
+        ])
+
+        let callsCompletionExpectations = expectation(description: "Calls completion")
+
+        viewController.collectionView.performBatchUpdates({
+            viewController.data[0].remove(at: 1)
+            viewController.data[0][0] = "0, 0 (updated)"
+            viewController.data[0][1] = "0, 2 (updated)"
+            viewController.collectionView.deleteItems(at: [
+                IndexPath(item: 0, section: 0),
+                IndexPath(item: 1, section: 0),
+                IndexPath(item: 2, section: 0),
+            ])
+            viewController.collectionView.insertItems(at: [
+                IndexPath(item: 0, section: 0),
                 IndexPath(item: 1, section: 0),
             ])
         }, completion: { _ in
@@ -120,14 +116,19 @@ final class UICollectionViewTests: XCTestCase {
         })
 
         waitForExpectations(timeout: 1)
+
+        _ = window
     }
 
     /// A test to validate that section reloads are handled before section deletes.
     func testSectionReloadsAreHandledBeforeRemoves() {
+        let window = UIWindow(frame: CGRect(origin: .zero, size: CGSize(width: 10_000, height: 10_000)))
         let viewController = SpyCollectionViewController()
+        window.rootViewController = viewController
+        window.makeKeyAndVisible()
         viewController.applyInitialData([
             ["0, 0"],
-            ["1, 0"],
+            ["1, 0", "1, 1", "1, 3"],
             ["2, 0"],
         ])
 
@@ -136,7 +137,7 @@ final class UICollectionViewTests: XCTestCase {
         viewController.collectionView.performBatchUpdates({
             viewController.data.remove(at: 0)
             viewController.data[1] = ["2, 0 (new)"]
-            viewController.collectionView.deleteSections([1])
+            viewController.collectionView.deleteSections([0])
             viewController.collectionView.reloadSections([2])
         }, completion: { _ in
             XCTAssertEqual(viewController.requestedIndexPaths, [IndexPath(item: 0, section: 1)])
@@ -144,5 +145,7 @@ final class UICollectionViewTests: XCTestCase {
         })
 
         waitForExpectations(timeout: 1)
+
+        _ = window
     }
 }
