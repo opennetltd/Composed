@@ -1,7 +1,8 @@
 import Foundation
 
 /// A section that flattens each of its children in to a single section.
-open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, SectionProviderUpdateDelegate {
+@MainActor
+open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDelegate {
     private enum Child {
         /// A single section.
         case section(Section)
@@ -35,16 +36,6 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
     }
 
     public weak var updateDelegate: SectionUpdateDelegate?
-
-    public var customMirror: Mirror {
-        Mirror(
-            self,
-            children: [
-                "children": children,
-            ],
-            displayStyle: .struct
-        )
-    }
 
     private var children: [Child] = []
 

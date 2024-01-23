@@ -2,6 +2,7 @@ import UIKit
 import Composed
 
 /// Provides selection handling for `UICollectionView`'s
+@MainActor
 public protocol CollectionSelectionHandler: SelectionHandler, UICollectionViewSection {
 
     /// When a selection occurs, this method will be called to notify the section

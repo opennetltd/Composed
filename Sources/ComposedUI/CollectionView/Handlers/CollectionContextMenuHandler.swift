@@ -2,7 +2,7 @@ import UIKit
 import Composed
 
 /// Provides context menu handling for `UICollectionView`'s
-@available(iOS 13.0, *)
+@MainActor
 public protocol CollectionContextMenuHandler: UICollectionViewSection {
 
     /// Specifies whether or not a specific element allows showing a context menu. If you want UIKit to indicate that a menu is usually provided for this element, true `true` and simply return `nil` for `contextMenu(forElementAt:cell:suggestedActions:)`
@@ -43,7 +43,6 @@ public protocol CollectionContextMenuHandler: UICollectionViewSection {
 
 }
 
-@available(iOS 13.0, *)
 public extension CollectionContextMenuHandler {
     func allowsContextMenu(forElementAt index: Int) -> Bool { return true }
     func contextMenu(forElementAt index: Int, cell: UICollectionViewCell, suggestedActions: [UIMenuElement]) -> UIMenu? { return nil }

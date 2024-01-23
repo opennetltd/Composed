@@ -2,6 +2,7 @@ import UIKit
 import CoreData
 import Composed
 
+@MainActor
 public protocol CollectionDragHandler: UICollectionViewSection {
 
     func dragSessionWillBegin(_ session: UIDragSession)

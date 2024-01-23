@@ -2,18 +2,20 @@ import UIKit
 
 /// Represents any type that can be loaded via a XIB/NIB
 public protocol NibLoadable {
-
+    @MainActor
     static var nib: UINib { get }
 
     static var nibName: String { get }
 
-    /// Returns an instance of `Self` from a nib. Uses String(describing: self) to determine the name of the nib.
+    /// Returns an instance of `Self` from a nib. Uses ``nibName-8ag89``.
+    @MainActor
     static var fromNib: Self { get }
 
     /// Returns an instance of `Self` from a nib.
     ///
     /// - Parameter name: The name of the nib
     /// - Returns: A new instance of this type
+    @MainActor
     static func fromNib(named name: String, withOwner ownerOrNil: Any?, options optionsOrNil: [UINib.OptionsKey: Any]?) -> Self
 
 }
@@ -24,11 +26,13 @@ extension NibLoadable where Self: UIView {
         return String(describing: self)
     }
 
+    @MainActor
     public static var nib: UINib {
         return UINib(nibName: nibName, bundle: nil)
     }
 
     /// Returns an instance of `Self` from a nib. Uses String(describing: self) to determine the name of the nib.
+    @MainActor
     public static var fromNib: Self {
         return fromNib(named: nibName)
     }
@@ -37,6 +41,7 @@ extension NibLoadable where Self: UIView {
     ///
     /// - Parameter name: The name of the nib
     /// - Returns: A new instance of this type
+    @MainActor
     public static func fromNib(named name: String, withOwner ownerOrNil: Any? = nil, options optionsOrNil: [UINib.OptionsKey: Any]? = nil) -> Self {
         let bundle = Bundle(for: self)
 
@@ -60,9 +65,11 @@ extension ReusableCell {
     }
 }
 
-public protocol ReuseableView: AnyObject {
+public protocol ReuseableView: UIView {
     static var reuseIdentifier: String { get }
     static var kind: String { get }
+
+    @MainActor
     var reuseIdentifier: String? { get }
 }
 
@@ -72,38 +79,8 @@ public extension ReuseableView {
     }
 }
 
-extension UITableViewCell: ReusableCell { }
 extension UICollectionReusableView: ReusableCell { }
-extension UITableViewHeaderFooterView: ReusableCell { }
 extension UICollectionReusableView: ReuseableView { }
-
-public extension UITableView {
-
-    // Cells
-
-    func register<C>(nib: C.Type, bundle: Bundle? = nil) where C: UITableViewCell {
-        let nib = UINib(nibName: String(describing: C.self), bundle: bundle ?? Bundle(for: C.self))
-        register(nib, forCellReuseIdentifier: C.reuseIdentifier)
-    }
-
-    func dequeue<C>(cell: C.Type, reuseIdentifier: String? = nil, for indexPath: IndexPath) -> C where C: UITableViewCell {
-        // swiftlint:disable force_cast
-        return dequeueReusableCell(withIdentifier: reuseIdentifier ?? cell.reuseIdentifier, for: indexPath) as! C
-    }
-
-    // Header/Footer Views
-
-    func registerHeaderFooterNib<C>(class: C.Type, bundle: Bundle? = nil) where C: UITableViewHeaderFooterView {
-        register(UINib(nibName: String(describing: C.self), bundle: bundle ?? Bundle(for: C.self)),
-                 forHeaderFooterViewReuseIdentifier: C.reuseIdentifier)
-    }
-
-    func dequeue<C>(headerFooter: C.Type, reuseIdentifier: String? = nil, for indexPath: IndexPath) -> C where C: UITableViewHeaderFooterView {
-        // swiftlint:disable force_cast
-        return dequeueReusableHeaderFooterView(withIdentifier: reuseIdentifier ?? headerFooter.reuseIdentifier) as! C
-    }
-
-}
 
 public extension UICollectionView {
 

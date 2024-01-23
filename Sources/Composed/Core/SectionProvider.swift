@@ -1,6 +1,7 @@
 import Foundation
 
 /// Represents a collection of `Section`'s.
+@MainActor
 public protocol SectionProvider: AnyObject {
     /// The child sections contained in this provider
     var sections: [Section] { get }
@@ -44,6 +45,7 @@ public extension SectionProvider {
 }
 
 /// Represents a collection of `SectionProvider`'s
+@MainActor
 public protocol AggregateSectionProvider: SectionProvider {
 
     var providers: [SectionProvider] { get }
@@ -61,6 +63,7 @@ public protocol AggregateSectionProvider: SectionProvider {
 }
 
 /// A delegate that will respond to update events from a `SectionProvider`
+@MainActor
 public protocol SectionProviderUpdateDelegate: AnyObject {
     /// Notifies the delegate that the section provider will perform a series of updates.
     ///
@@ -91,7 +94,6 @@ public protocol SectionProviderUpdateDelegate: AnyObject {
 
 // Default implementations to minimise `SectionProvider` implementation requirements
 public extension SectionProviderUpdateDelegate where Self: SectionProvider {
-
     func provider(_ provider: SectionProvider, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
         if let updateDelegate = updateDelegate {
             updateDelegate.provider(self, willPerformBatchUpdates: updates, forceReloadData: forceReloadData)
@@ -111,5 +113,4 @@ public extension SectionProviderUpdateDelegate where Self: SectionProvider {
     func provider(_ provider: SectionProvider, didRemoveSections sections: [Section], at indexes: IndexSet) {
         updateDelegate?.provider(provider, didRemoveSections: sections, at: indexes)
     }
-
 }

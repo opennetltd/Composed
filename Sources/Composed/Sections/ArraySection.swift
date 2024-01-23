@@ -20,8 +20,8 @@ import Foundation
  section.numberOfElements // returns 3
 
  */
-open class ArraySection<Element>: Section, ExpressibleByArrayLiteral {
-
+@MainActor
+open class ArraySection<Element>: Section {
     public weak var updateDelegate: SectionUpdateDelegate?
 
     /// Represents the elements this section contains
@@ -31,14 +31,8 @@ open class ArraySection<Element>: Section, ExpressibleByArrayLiteral {
         self.elements = elements
     }
 
-    public required init() {
+    public init() {
         elements = []
-    }
-
-    /// Makes an `ArraySection` containing the specified elements
-    /// - Parameter elements: The elements to append
-    public required init(arrayLiteral elements: Element...) {
-        self.elements = elements
     }
 
     /// Returns the element at the specified index
@@ -51,21 +45,9 @@ open class ArraySection<Element>: Section, ExpressibleByArrayLiteral {
     public var numberOfElements: Int {
         return elements.count
     }
-
 }
 
-extension ArraySection: Sequence {
-
-    public typealias Iterator = Array<Element>.Iterator
-
-    public func makeIterator() -> IndexingIterator<Array<Element>> {
-        return elements.makeIterator()
-    }
-
-}
-
-extension ArraySection: MutableCollection, RandomAccessCollection, BidirectionalCollection {
-
+extension ArraySection {
     public typealias Index = Array<Element>.Index
 
     public var isEmpty: Bool { return elements.isEmpty }
@@ -163,10 +145,11 @@ extension ArraySection: MutableCollection, RandomAccessCollection, Bidirectional
 
     /// Removes all elements from this section
     public func removeAll() {
-        performBatchUpdates { _ in
-            let indexes = IndexSet(integersIn: indices)
-            indexes.sorted(by: >).forEach { updateDelegate?.section(self, didRemoveElementAt: $0) }
+        performBatchUpdates { updateDelegate in
             elements.removeAll()
+            for index in stride(from: endIndex - 1, to: startIndex, by: -1) {
+                updateDelegate?.section(self, didRemoveElementAt: index)
+            }
         }
     }
 
@@ -175,21 +158,17 @@ extension ArraySection: MutableCollection, RandomAccessCollection, Bidirectional
         updateDelegate?.invalidateAll(self)
     }
 
-}
-
-extension ArraySection: Equatable where Element: Equatable {
-    public static func == (lhs: ArraySection<Element>, rhs: ArraySection<Element>) -> Bool {
-        return lhs.elements == rhs.elements
+    public func swapAt(_ i: Index, _ j: Index) {
+        guard i != j else { return }
+        performBatchUpdates { updateDelegate in
+            elements.swapAt(i, j)
+            updateDelegate?.section(self, didUpdateElementAt: i)
+            updateDelegate?.section(self, didUpdateElementAt: j)
+        }
     }
 }
 
-extension ArraySection: Hashable where Element: Hashable {
-    public func hash(into hasher: inout Hasher) {
-        elements.hash(into: &hasher)
-    }
-}
-
-extension ArraySection: RangeReplaceableCollection {
+extension ArraySection {
     public func replaceSubrange<C: Swift.Collection, R: RangeExpression>(_ subrange: R, with newElements: C) where C.Element == Element, R.Bound == Index {
         performBatchUpdates { updateDelegate in
             elements.replaceSubrange(subrange, with: newElements)
@@ -197,11 +176,5 @@ extension ArraySection: RangeReplaceableCollection {
                 updateDelegate?.section(self, didUpdateElementAt: index)
             }
         }
-    }
-}
-
-extension ArraySection: CustomStringConvertible {
-    public var description: String {
-        return String(describing: elements)
     }
 }

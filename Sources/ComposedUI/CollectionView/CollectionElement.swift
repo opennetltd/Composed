@@ -18,41 +18,43 @@ public enum CollectionElementKind {
 }
 
 /// Defines an element used by a `CollectionSection` to provide configurations for a cell, header and/or footer.
+@MainActor
 public protocol CollectionElement {
 
     /// The method to use for registering and dequeueing a view for this element
     var dequeueMethod: AnyDequeueMethod { get }
 
     /// A closure that will be called whenever the elements view needs to be configured
-    var configure: (UICollectionReusableView, Int, Section) -> Void { get }
+    var configure: @MainActor (UICollectionReusableView, Int, Section) -> Void { get }
 
     /// The reuseIdentifier to use for this element
     var reuseIdentifier: String { get }
 
     /// A closure that will be called before the elements view is appeared
-    var willAppear: ((UICollectionReusableView, Int, Section) -> Void)? { get }
+    var willAppear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)? { get }
 
     /// A closure that will be called after the elements view has disappeared
-    var didDisappear: ((UICollectionReusableView, Int, Section) -> Void)? { get }
+    var didDisappear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)? { get }
 
 }
 
 extension CollectionElement {
-    public var willAppear: ((UICollectionReusableView, Int, Section) -> Void)? { nil }
-    public var didDisappear: ((UICollectionReusableView, Int, Section) -> Void)? { nil }
+    public var willAppear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)? { nil }
+    public var didDisappear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)? { nil }
 }
 
 /// Defines a cell element to be used by a `CollectionSection` to provide a configuration for a cell
+@MainActor
 open class CollectionCellElement: CollectionElement {
 
     public let dequeueMethod: AnyDequeueMethod
-    public let configure: (UICollectionReusableView, Int, Section) -> Void
+    public let configure: @MainActor (UICollectionReusableView, Int, Section) -> Void
     public let reuseIdentifier: String
 
     /// The closure that will be called before the elements view appears
-    public let willAppear: ((UICollectionReusableView, Int, Section) -> Void)?
+    public let willAppear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)?
     /// The closure that will be called after the elements view disappears
-    public let didDisappear: ((UICollectionReusableView, Int, Section) -> Void)?
+    public let didDisappear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)?
 
     /// Makes a new element for representing a cell
     /// - Parameters:
@@ -206,16 +208,16 @@ open class CollectionCellElement: CollectionElement {
 public final class CollectionSupplementaryElement: CollectionElement {
 
     public let dequeueMethod: AnyDequeueMethod
-    public let configure: (UICollectionReusableView, Int, Section) -> Void
+    public let configure: @MainActor (UICollectionReusableView, Int, Section) -> Void
     public let reuseIdentifier: String
 
     /// The `elementKind` this element represents
     public let kind: CollectionElementKind
 
     /// A closure that will be called before the elements view is appeared
-    public let willAppear: ((UICollectionReusableView, Int, Section) -> Void)?
+    public let willAppear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)?
     /// A closure that will be called after the elements view has disappeared
-    public let didDisappear: ((UICollectionReusableView, Int, Section) -> Void)?
+    public let didDisappear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)?
 
     /// Makes a new element for representing a supplementary view
     /// - Parameters:
