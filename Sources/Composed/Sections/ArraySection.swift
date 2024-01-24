@@ -166,6 +166,10 @@ extension ArraySection {
             updateDelegate?.section(self, didUpdateElementAt: j)
         }
     }
+
+    public func first(where predicate: (Element) throws -> Bool) rethrows -> Element? {
+        try elements.first(where: predicate)
+    }
 }
 
 extension ArraySection {
