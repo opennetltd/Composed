@@ -11,7 +11,6 @@ public protocol SectionProvider: AnyObject {
 }
 
 public extension SectionProvider {
-
     /// Returns true if the provider contains no sections or all of its sections are empty, false otherwise
     var isEmpty: Bool {
         return sections.isEmpty || sections.allSatisfy { $0.isEmpty }

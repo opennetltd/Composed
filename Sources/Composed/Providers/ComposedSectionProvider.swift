@@ -259,7 +259,9 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
 
     public func removeAll() {
         performBatchUpdates { updateDelegate in
-            children.reversed().forEach(remove(_:))
+            for child in children.reversed() {
+                remove(child)
+            }
         }
     }
     
