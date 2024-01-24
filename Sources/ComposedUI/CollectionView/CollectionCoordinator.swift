@@ -312,7 +312,6 @@ open class CollectionCoordinator: NSObject {
 // MARK: - SectionProviderMappingDelegate
 
 extension CollectionCoordinator: SectionProviderMappingDelegate {
-    @MainActor
     public func mappingDidInvalidate(_ mapping: SectionProviderMapping) {
         guard !reloadDataBatchUpdates else {
             /// Not necessary; below code will be executed in `mapping(_:willPerformBatchUpdates:forceReloadData:)`
@@ -325,12 +324,10 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         collectionView.reloadData()
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, willPerformBatchUpdates updates: () -> Void) {
         self.mapping(mapping, willPerformBatchUpdates: updates, forceReloadData: false)
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
         guard !changesReducer.hasActiveUpdates else {
             assert(!forceReloadData, "Cannot reload data while inside `performBatchUpdates`")
@@ -418,7 +415,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         debugLog("`performBatchUpdates` call has completed")
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, didInsertSections sections: IndexSet) {
         debugLog(#function + "\(Array(sections))")
 
@@ -433,7 +429,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         changesReducer.insertGroups(sections)
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, didRemoveSections sections: IndexSet) {
         debugLog(#function + "\(Array(sections))")
 
@@ -448,7 +443,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         changesReducer.removeGroups(sections)
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, didInsertElementsAt indexPaths: [IndexPath]) {
         debugLog(#function + "\(indexPaths)")
 
@@ -463,7 +457,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         changesReducer.insertElements(at: indexPaths)
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, didRemoveElementsAt indexPaths: [IndexPath]) {
         debugLog(#function + "\(indexPaths)")
 
@@ -478,7 +471,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         changesReducer.removeElements(at: indexPaths)
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, didUpdateElementsAt indexPaths: [IndexPath]) {
         debugLog(#function + "\(indexPaths)")
 
@@ -512,7 +504,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         changesReducer.updateElements(at: indexPaths)
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, didMoveElementsAt moves: [(IndexPath, IndexPath)]) {
         debugLog(#function + "\(moves)")
 
@@ -527,30 +518,25 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         changesReducer.moveElements(moves)
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, selectedIndexesIn section: Int) -> [Int] {
         let indexPaths = collectionView.indexPathsForSelectedItems ?? []
         return indexPaths.filter { $0.section == section }.map { $0.item }
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, select indexPath: IndexPath) {
         collectionView.selectItem(at: indexPath, animated: true, scrollPosition: [])
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, deselect indexPath: IndexPath) {
         collectionView.deselectItem(at: indexPath, animated: true)
     }
 
-    @MainActor
     public func mapping(_ mapping: SectionProviderMapping, move sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
         guard !reloadDataBatchUpdates else { return }
         // TODO: Check `isPerformingBatchedUpdates`
         self.mapping(mapping, didMoveElementsAt: [(sourceIndexPath, destinationIndexPath)])
     }
 
-    @MainActor
     public func mappingDidInvalidateHeader(at sectionIndex: Int) {
         // Ensure elements provider is available, views have been registered, etc.
         prepareSections()
@@ -575,7 +561,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         }
     }
 
-    @MainActor
     public func mappingDidInvalidateFooter(at sectionIndex: Int) {
         // Ensure elements provider is available, views have been registered, etc.
         prepareSections()
