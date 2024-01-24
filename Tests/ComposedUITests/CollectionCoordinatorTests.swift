@@ -247,12 +247,11 @@ final class CollectionCoordinatorTests: XCTestCase {
 
         tester.applyUpdate { sections in
             let delegate = sections.rootSectionProvider.updateDelegate
-            defer {
-                sections.rootSectionProvider.updateDelegate = delegate
-            }
             sections.rootSectionProvider.updateDelegate = nil
 
             sections.rootSectionProvider.remove(sections.child1)
+
+            sections.rootSectionProvider.updateDelegate = delegate
         }
 
         tester.applyUpdate { sections in
