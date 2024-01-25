@@ -11,6 +11,7 @@ import Foundation
  provider.numberOfElements(in: 0) // returns 5
  provider.numberOfElements(in: 1) // return2 3
  */
+@MainActor
 open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpdateDelegate {
     
     /// Represents either a section or a provider
@@ -195,6 +196,7 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
     ///   - index: The index where the `SectionProvider` should be inserted
     public func insert(_ child: SectionProvider, at index: Int) {
         assert(!contains(child), "Attemtping to append a section provider that is already a child")
+        assert(child !== self, "Attemtping to append a self as a child")
         guard (0...children.count).contains(index) else { fatalError("Index out of bounds: \(index)") }
         
         child.updateDelegate = self
@@ -257,7 +259,9 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
 
     public func removeAll() {
         performBatchUpdates { updateDelegate in
-            children.reversed().forEach(remove(_:))
+            for child in children.reversed() {
+                remove(child)
+            }
         }
     }
     

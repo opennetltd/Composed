@@ -1,6 +1,7 @@
 import Foundation
 
 /// Provides selection handling for a section
+@MainActor
 public protocol SelectionHandler: Section {
 
     /// Return `true` to allow multiple selection in this section, defaults to `false`

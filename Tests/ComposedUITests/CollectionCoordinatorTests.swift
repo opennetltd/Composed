@@ -13,6 +13,7 @@ final class CollectionCoordinatorTests: XCTestCase {
     /// error, which would likely indicate an error in `ChangesReducer`.
     ///
     /// It may also fail without throwing an exception, instead logging: `Invalid update: invalid ... - will perform reloadData`.
+    @MainActor
     func testBatchUpdates() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -216,6 +217,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveInsertedElementWhileWaitingForAnimations() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -229,6 +231,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveSectionWhenForcingReloadData() {
         let tester = Tester(forceReloadData: true) { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -238,12 +241,11 @@ final class CollectionCoordinatorTests: XCTestCase {
 
         tester.applyUpdate { sections in
             let delegate = sections.rootSectionProvider.updateDelegate
-            defer {
-                sections.rootSectionProvider.updateDelegate = delegate
-            }
             sections.rootSectionProvider.updateDelegate = nil
 
             sections.rootSectionProvider.remove(sections.child1)
+
+            sections.rootSectionProvider.updateDelegate = delegate
         }
 
         tester.applyUpdate { sections in
@@ -255,6 +257,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveAndInsertMultipleSection() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -277,6 +280,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testInsertsAndRemoves() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -295,6 +299,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testBatchedSectionRemovals() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -354,6 +359,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testGroupAndElementRemoves() {
         // Mirror of `ChangesReducerTests.testGroupAndElementRemoves`
         let tester = Tester() { sections in
@@ -384,6 +390,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testInsertInToSectionAfterInsertion() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -425,6 +432,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testSwapping() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -436,6 +444,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveAll() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child2)
@@ -446,6 +455,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveLast2() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -459,6 +469,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveInsertedSection() {
         let tester = Tester() { _ in }
 
@@ -471,6 +482,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveInsertsSection() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child1)
@@ -485,6 +497,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveThenInsertAtSameIndexPath() {
         let tester = Tester() { sections in
             (0...9).forEach { index in
@@ -502,6 +515,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testInsertAndRemovalInSameSection() {
         let tester = Tester() { sections in
             (0...2).forEach { index in
@@ -531,6 +545,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveThenReloadAtSameIndexPath() {
         let tester = Tester() { sections in
             (0...9).forEach { index in
@@ -553,6 +568,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testRemoveInsertSections() {
         let tester = Tester() { sections in
             (0...1).forEach { index in
@@ -590,6 +606,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testReloadThenRemoveAtSameIndexPath() {
         let tester = Tester() { sections in
             (0...9).forEach { index in
@@ -607,6 +624,7 @@ final class CollectionCoordinatorTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testReloadInsertReload() {
         let tester = Tester() { sections in
             (0..<2).forEach { index in
@@ -627,6 +645,7 @@ final class CollectionCoordinatorTests: XCTestCase {
     }
 
     /// Test a crash from Sporty
+    @MainActor
     func testDeleteDeleteDeleteReload() {
         let tester = Tester() { sections in
             (0...3).forEach { index in
@@ -650,6 +669,7 @@ final class CollectionCoordinatorTests: XCTestCase {
     }
 
     /// Test a crash from Sporty
+    @MainActor
     func testSportyCrash() {
         let tester = Tester() { sections in
             (0...51).forEach { index in
@@ -907,6 +927,7 @@ final class CollectionCoordinatorTests: XCTestCase {
     }
 
     /// Test a crash from Sporty
+    @MainActor
     func testSportyCrash2() {
         let tester = Tester() { sections in
             sections.rootSectionProvider.append(sections.child0)
@@ -932,20 +953,25 @@ final class CollectionCoordinatorTests: XCTestCase {
     }
 
     /// Test a crash from Sporty
+    @MainActor
     func testSportyCrash3() throws {
         let tester = Tester() { sections in
             (0...23).forEach { index in
                 switch index {
                 case 1:
-                    sections.rootSectionProvider.append(MockCollectionArraySection([
-                        "1a",
-                        "1b",
-                        "1c",
-                    ]))
+                    sections.rootSectionProvider.append(
+                        MockCollectionArraySection(elements: [
+                            "1a",
+                            "1b",
+                            "1c",
+                        ])
+                    )
                 default:
-                    sections.rootSectionProvider.append(MockCollectionArraySection([
-                        "\(index)a"
-                    ]))
+                    sections.rootSectionProvider.append(
+                        MockCollectionArraySection(elements: [
+                            "\(index)a"
+                        ])
+                    )
                 }
             }
         }
@@ -963,12 +989,12 @@ final class CollectionCoordinatorTests: XCTestCase {
             (sections.rootSectionProvider.sections[1] as! ArraySection<String>).insert("1c-new", at: 2)
         }
         tester.applyUpdate { sections in
-            sections.rootSectionProvider.append(MockCollectionArraySection([
+            sections.rootSectionProvider.append(MockCollectionArraySection(elements: [
                 "24a-inserted"
             ]))
         }
         tester.applyUpdate { sections in
-            sections.rootSectionProvider.append(MockCollectionArraySection([
+            sections.rootSectionProvider.append(MockCollectionArraySection(elements: [
                 "25a-inserted"
             ]))
         }
@@ -1116,6 +1142,7 @@ final class CollectionCoordinatorTests: XCTestCase {
     }
 }
 
+@MainActor
 private final class MockCollectionArraySection: ArraySection<String>, SingleUICollectionViewSection, CollectionFlowLayoutHandler {
     var requestedCells: [Int] = []
 
@@ -1132,18 +1159,20 @@ private final class MockCollectionArraySection: ArraySection<String>, SingleUICo
     }
 }
 
+@MainActor
 private final class TestSections {
     let rootSectionProvider = ComposedSectionProvider()
 
-    var child0 = MockCollectionArraySection([])
-    var child1 = MockCollectionArraySection([])
-    var child2 = MockCollectionArraySection([])
-    var child3 = MockCollectionArraySection([])
-    var child4 = MockCollectionArraySection([])
-    var child5 = MockCollectionArraySection([])
-    var child6 = MockCollectionArraySection([])
+    var child0 = MockCollectionArraySection(elements: [])
+    var child1 = MockCollectionArraySection(elements: [])
+    var child2 = MockCollectionArraySection(elements: [])
+    var child3 = MockCollectionArraySection(elements: [])
+    var child4 = MockCollectionArraySection(elements: [])
+    var child5 = MockCollectionArraySection(elements: [])
+    var child6 = MockCollectionArraySection(elements: [])
 }
 
+@MainActor
 private final class Tester {
     typealias Updater = (TestSections) -> Void
 

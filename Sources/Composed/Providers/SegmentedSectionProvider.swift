@@ -13,6 +13,7 @@ import Foundation
      provider.numberOfElements(in: 0) // return 3
      provider.numberOfElements(in: 1) // out-of-bounds error
  */
+@MainActor
 open class SegmentedSectionProvider: AggregateSectionProvider, SectionProviderUpdateDelegate {
 
     public enum Child: Equatable {

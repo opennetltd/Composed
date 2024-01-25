@@ -3,6 +3,7 @@ import Composed
 import os.log
 
 /// Conform to this protocol to receive `CollectionCoordinator` events
+@MainActor
 public protocol CollectionCoordinatorDelegate: AnyObject {
 
     /// Return a background view to be shown in the `UICollectionView` when its content is empty. Defaults to nil
@@ -22,6 +23,7 @@ public extension CollectionCoordinatorDelegate {
 }
 
 /// The coordinator that provides the 'glue' between a section provider and a `UICollectionView`
+@MainActor
 open class CollectionCoordinator: NSObject {
     private struct NIBRegistration: Hashable {
         let nibName: String
@@ -118,27 +120,35 @@ open class CollectionCoordinator: NSObject {
         prepareSections()
 
         delegateObserver = collectionView.observe(\.delegate, options: [.initial, .new]) { [weak self] collectionView, _ in
-            guard collectionView.delegate !== self else { return }
-            self?.originalDelegate = collectionView.delegate
-            collectionView.delegate = self
+            MainActor.unsafeAssumeIsolated {
+                guard let self, collectionView.delegate !== self else { return }
+                self.originalDelegate = collectionView.delegate
+                collectionView.delegate = self
+            }
         }
 
         dataSourceObserver = collectionView.observe(\.dataSource, options: [.initial, .new]) { [weak self] collectionView, _ in
-            guard collectionView.dataSource !== self else { return }
-            self?.originalDataSource = collectionView.dataSource
-            collectionView.dataSource = self
+            MainActor.unsafeAssumeIsolated {
+                guard let self, collectionView.dataSource !== self else { return }
+                self.originalDataSource = collectionView.dataSource
+                collectionView.dataSource = self
+            }
         }
 
         dragDelegateObserver = collectionView.observe(\.dragDelegate, options: [.initial, .new]) { [weak self] collectionView, _ in
-            guard collectionView.dragDelegate !== self else { return }
-            self?.originalDragDelegate = collectionView.dragDelegate
-            collectionView.dragDelegate = self
+            MainActor.unsafeAssumeIsolated {
+                guard let self, collectionView.dragDelegate !== self else { return }
+                self.originalDragDelegate = collectionView.dragDelegate
+                collectionView.dragDelegate = self
+            }
         }
 
         dropDelegateObserver = collectionView.observe(\.dropDelegate, options: [.initial, .new]) { [weak self] collectionView, _ in
-            guard collectionView.dropDelegate !== self else { return }
-            self?.originalDropDelegate = collectionView.dropDelegate
-            collectionView.dropDelegate = self
+            MainActor.unsafeAssumeIsolated {
+                guard let self, collectionView.dropDelegate !== self else { return }
+                self.originalDropDelegate = collectionView.dropDelegate
+                collectionView.dropDelegate = self
+            }
         }
 
         collectionView.register(PlaceholderSupplementaryView.self,
@@ -303,8 +313,6 @@ open class CollectionCoordinator: NSObject {
 
 extension CollectionCoordinator: SectionProviderMappingDelegate {
     public func mappingDidInvalidate(_ mapping: SectionProviderMapping) {
-        assert(Thread.isMainThread)
-
         guard !reloadDataBatchUpdates else {
             /// Not necessary; below code will be executed in `mapping(_:willPerformBatchUpdates:forceReloadData:)`
             return
@@ -321,8 +329,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mapping(_ mapping: SectionProviderMapping, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
-        assert(Thread.isMainThread)
-
         guard !changesReducer.hasActiveUpdates else {
             assert(!forceReloadData, "Cannot reload data while inside `performBatchUpdates`")
 
@@ -410,8 +416,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mapping(_ mapping: SectionProviderMapping, didInsertSections sections: IndexSet) {
-        assert(Thread.isMainThread)
-
         debugLog(#function + "\(Array(sections))")
 
         guard !reloadDataBatchUpdates else { return }
@@ -426,8 +430,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mapping(_ mapping: SectionProviderMapping, didRemoveSections sections: IndexSet) {
-        assert(Thread.isMainThread)
-
         debugLog(#function + "\(Array(sections))")
 
         guard !reloadDataBatchUpdates else { return }
@@ -442,8 +444,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mapping(_ mapping: SectionProviderMapping, didInsertElementsAt indexPaths: [IndexPath]) {
-        assert(Thread.isMainThread)
-
         debugLog(#function + "\(indexPaths)")
 
         guard !reloadDataBatchUpdates else { return }
@@ -458,8 +458,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mapping(_ mapping: SectionProviderMapping, didRemoveElementsAt indexPaths: [IndexPath]) {
-        assert(Thread.isMainThread)
-
         debugLog(#function + "\(indexPaths)")
 
         guard !reloadDataBatchUpdates else { return }
@@ -474,8 +472,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mapping(_ mapping: SectionProviderMapping, didUpdateElementsAt indexPaths: [IndexPath]) {
-        assert(Thread.isMainThread)
-
         debugLog(#function + "\(indexPaths)")
 
         guard !reloadDataBatchUpdates else { return }
@@ -509,8 +505,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mapping(_ mapping: SectionProviderMapping, didMoveElementsAt moves: [(IndexPath, IndexPath)]) {
-        assert(Thread.isMainThread)
-
         debugLog(#function + "\(moves)")
 
         guard !reloadDataBatchUpdates else { return }
@@ -525,18 +519,15 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mapping(_ mapping: SectionProviderMapping, selectedIndexesIn section: Int) -> [Int] {
-        assert(Thread.isMainThread)
         let indexPaths = collectionView.indexPathsForSelectedItems ?? []
         return indexPaths.filter { $0.section == section }.map { $0.item }
     }
 
     public func mapping(_ mapping: SectionProviderMapping, select indexPath: IndexPath) {
-        assert(Thread.isMainThread)
         collectionView.selectItem(at: indexPath, animated: true, scrollPosition: [])
     }
 
     public func mapping(_ mapping: SectionProviderMapping, deselect indexPath: IndexPath) {
-        assert(Thread.isMainThread)
         collectionView.deselectItem(at: indexPath, animated: true)
     }
 
@@ -613,7 +604,6 @@ extension CollectionCoordinator: UICollectionViewDataSource {
     }
 
     public func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-        assert(Thread.isMainThread)
         defer {
             originalDelegate?.collectionView?(collectionView, willDisplay: cell, forItemAt: indexPath)
         }
@@ -624,7 +614,6 @@ extension CollectionCoordinator: UICollectionViewDataSource {
     }
 
     public func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
-        assert(Thread.isMainThread)
         defer {
             originalDelegate?.collectionView?(collectionView, didEndDisplaying: cell, forItemAt: indexPath)
         }
@@ -635,7 +624,6 @@ extension CollectionCoordinator: UICollectionViewDataSource {
     }
 
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        assert(Thread.isMainThread)
         let elements = elementsProvider(for: indexPath.section)
         let cellElement = elements.cell(for: indexPath.item)
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellElement.reuseIdentifier, for: indexPath)
@@ -655,7 +643,6 @@ extension CollectionCoordinator: UICollectionViewDataSource {
     }
 
     public func collectionView(_ collectionView: UICollectionView, willDisplaySupplementaryView view: UICollectionReusableView, forElementKind elementKind: String, at indexPath: IndexPath) {
-        assert(Thread.isMainThread)
         defer {
             originalDelegate?.collectionView?(collectionView, willDisplaySupplementaryView: view, forElementKind: elementKind, at: indexPath)
         }
@@ -677,7 +664,6 @@ extension CollectionCoordinator: UICollectionViewDataSource {
     }
 
     public func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
-        assert(Thread.isMainThread)
         let elements = elementsProvider(for: indexPath.section)
         let section = mapper.provider.sections[indexPath.section]
 
@@ -701,7 +687,6 @@ extension CollectionCoordinator: UICollectionViewDataSource {
     }
 
     public func collectionView(_ collectionView: UICollectionView, didEndDisplayingSupplementaryView view: UICollectionReusableView, forElementOfKind elementKind: String, at indexPath: IndexPath) {
-        assert(Thread.isMainThread)
         defer {
             originalDelegate?.collectionView?(collectionView, didEndDisplayingSupplementaryView: view, forElementOfKind: elementKind, at: indexPath)
         }
@@ -1021,8 +1006,29 @@ public extension CollectionCoordinator {
     ///   - sections: The sections associated with this coordinator
     convenience init(collectionView: UICollectionView, sections: Section...) {
         let provider = ComposedSectionProvider()
-        sections.forEach(provider.append(_:))
+        for section in sections {
+            provider.append(section)
+        }
         self.init(collectionView: collectionView, sectionProvider: provider)
     }
 
+}
+
+extension MainActor {
+    @_unavailableFromAsync
+    @available(iOS, obsoleted: 17.0, message: "Use `assumeIsolated`")
+    @available(swift, obsoleted: 5.10, renamed: "assumeIsolated")
+    public static func unsafeAssumeIsolated<T>(_ operation: @MainActor () throws -> T) rethrows -> T {
+        // This is the code from the standard library but without the executor check because there's
+        // no public API to access it.
+        // https://github.com/apple/swift/blob/cf736295122e267db63c980ab4bff39e9022ce1e/stdlib/public/Concurrency/MainActor.swift#L119
+        typealias YesActor = @MainActor () throws -> T
+        typealias NoActor = () throws -> T
+
+        // To do the unsafe cast, we have to pretend it's @escaping.
+        return try withoutActuallyEscaping(operation) { (_ fn: @escaping YesActor) throws -> T in
+            let rawFn = unsafeBitCast(fn, to: NoActor.self)
+            return try rawFn()
+        }
+    }
 }

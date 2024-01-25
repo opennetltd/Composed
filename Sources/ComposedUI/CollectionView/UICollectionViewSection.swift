@@ -5,10 +5,12 @@ import Composed
 public typealias CollectionSectionProvider = SingleUICollectionViewSection
 
 /// A `Section` that provides an object that can be used to dequeue cells to be displayed in a `UICollectionView`.
+@MainActor
 public protocol UICollectionViewSection: Section {
     func collectionViewElementsProvider(with traitCollection: UITraitCollection) -> UICollectionViewSectionElementsProvider
 }
 
+@MainActor
 public protocol SingleUICollectionViewSection: UICollectionViewSection {
     func section(with traitCollection: UITraitCollection) -> CollectionSection
 }
@@ -22,6 +24,7 @@ extension SingleUICollectionViewSection {
 @available(*, deprecated, renamed: "UICollectionViewSectionElementsProvider")
 public typealias CollectionElementsProvider = UICollectionViewSectionElementsProvider
 
+@MainActor
 public protocol UICollectionViewSectionElementsProvider {
     var header: CollectionSupplementaryElement? { get }
     var footer: CollectionSupplementaryElement? { get }
@@ -34,6 +37,7 @@ extension UICollectionViewSectionElementsProvider {
     public var isEmpty: Bool { return numberOfElements == 0 }
 }
 
+@MainActor
 public protocol SingleUICollectionViewSectionElementsProvider: UICollectionViewSectionElementsProvider {
     var cell: CollectionCellElement { get }
 }

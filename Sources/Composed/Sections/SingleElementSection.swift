@@ -11,6 +11,7 @@ import Foundation
      section.replace(element: 0)
      section.numberOfElements    // return 1
  */
+@MainActor
 open class SingleElementSection<Element>: Section {
 
     public weak var updateDelegate: SectionUpdateDelegate?

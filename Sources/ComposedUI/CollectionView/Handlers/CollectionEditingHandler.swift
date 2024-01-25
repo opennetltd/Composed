@@ -2,6 +2,7 @@ import UIKit
 import Composed
 
 /// Provides edit handling for `UICollectionView`'s
+@MainActor
 public protocol CollectionEditingHandler: EditingHandler, UICollectionViewSection {
 
     /// When editing is toggled, this method will be called to notify the section
