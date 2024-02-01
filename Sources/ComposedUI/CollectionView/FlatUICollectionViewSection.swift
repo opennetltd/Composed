@@ -29,8 +29,27 @@ open class FlatUICollectionViewSection: FlatSection, UICollectionViewSection {
 }
 
 extension FlatUICollectionViewSection: CollectionSelectionHandler {
+    public func shouldSelect(at index: Int, cell: UICollectionViewCell) -> Bool {
+        guard let sectionMeta = self.sectionForElementIndex(index) else {
+            return shouldSelect(at: index)
+        }
+
+        let sectionIndex = index - sectionMeta.offset
+
+        if let section = sectionMeta.section as? CollectionSelectionHandler {
+            return section.shouldSelect(at: sectionIndex, cell: cell)
+        } else if let section = sectionMeta.section as? SelectionHandler {
+            return section.shouldSelect(at: sectionIndex)
+        } else {
+            return shouldSelect(at: index)
+        }
+    }
+
     public func didSelect(at index: Int, cell: UICollectionViewCell) {
-        guard let sectionMeta = self.sectionForElementIndex(index) else { return }
+        guard let sectionMeta = self.sectionForElementIndex(index) else {
+            didSelect(at: index)
+            return
+        }
 
         let sectionIndex = index - sectionMeta.offset
 
@@ -38,11 +57,16 @@ extension FlatUICollectionViewSection: CollectionSelectionHandler {
             section.didSelect(at: sectionIndex, cell: cell)
         } else if let section = sectionMeta.section as? SelectionHandler {
             section.didSelect(at: sectionIndex)
+        } else {
+            didSelect(at: index)
         }
     }
 
     public func didDeselect(at index: Int, cell: UICollectionViewCell) {
-        guard let sectionMeta = self.sectionForElementIndex(index) else { return }
+        guard let sectionMeta = self.sectionForElementIndex(index) else {
+            didDeselect(at: index)
+            return
+        }
 
         let sectionIndex = index - sectionMeta.offset
 
@@ -50,6 +74,8 @@ extension FlatUICollectionViewSection: CollectionSelectionHandler {
             section.didDeselect(at: sectionIndex, cell: cell)
         } else if let section = sectionMeta.section as? SelectionHandler {
             section.didDeselect(at: sectionIndex)
+        } else {
+            didDeselect(at: index)
         }
     }
 }
