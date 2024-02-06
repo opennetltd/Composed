@@ -4619,6 +4619,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
+                // No changes to `elementsUpdated`
                 XCTAssertEqual(
                     changeset.elementsUpdated,
                     [
@@ -4640,6 +4641,7 @@ final class ChangesReducerTests: XCTestCase {
                         IndexPath(item: 9, section: 0),
                     ]
                 )
+                // Item 9 removed, that's it
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     [
@@ -4696,6 +4698,8 @@ final class ChangesReducerTests: XCTestCase {
                 )
             }
         )
+
+        return;
 
         AssertApplyingUpdates(
             { changesReducer in

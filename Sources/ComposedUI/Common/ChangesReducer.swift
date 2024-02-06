@@ -77,11 +77,12 @@ internal struct ChangesReducer: CustomReflectable {
             changeset.groupsInserted.remove(updatedGroup)
             changeset.groupsUpdated.insert(updatedGroup)
         }
-        let updatedElements = changeset.elementsRemoved.intersection(changeset.elementsInserted)
-        updatedElements.forEach { updatedElement in
-            changeset.elementsRemoved.remove(updatedElement)
-            changeset.elementsInserted.remove(updatedElement)
-            changeset.elementsUpdated.insert(updatedElement)
+        for elementRemoved in changeset.elementsRemoved.sorted(by: >) {
+            if let insertedIndex = changeset.elementsInserted.firstIndex(where: { transformIndexPath($0) == elementRemoved }) {
+                changeset.elementsRemoved.remove(elementRemoved)
+                changeset.elementsInserted.remove(at: insertedIndex)
+                changeset.elementsUpdated.insert(elementRemoved)
+            }
         }
         self.changeset = Changeset()
         return changeset
@@ -238,11 +239,11 @@ internal struct ChangesReducer: CustomReflectable {
 
             guard !changeset.groupsInserted.contains(removedIndexPath.section), !changeset.groupsUpdated.contains(removedIndexPath.section) else { return }
 
-            let isInInserted = changeset.elementsInserted.contains(removedIndexPath)
+            let wasInInserted = changeset.elementsInserted.contains(removedIndexPath)
             let originalWasInInserted = changeset.elementsInserted.contains(originalRemovedIndexPath)
 
             defer {
-                if !isInInserted {
+                if !originalWasInInserted {
                     changeset.elementsRemoved.insert(removedIndexPath)
                 } else if removedIndexPath.item != originalRemovedIndexPath.item, !originalWasInInserted {
                     changeset.elementsUpdated.insert(removedIndexPath)
@@ -264,7 +265,7 @@ internal struct ChangesReducer: CustomReflectable {
                 if existingInsertedIndexPath.item > removedIndexPath.item/*, !changeset.elementsRemoved.contains(existingInsertedIndexPath)*/
                 {
                     existingInsertedIndexPath.item -= 1
-                } else if existingInsertedIndexPath.item == removedIndexPath.item {
+                } else if existingInsertedIndexPath.item == originalRemovedIndexPath.item {
                     return nil
                 }
 
