@@ -4510,7 +4510,7 @@ final class ChangesReducerTests: XCTestCase {
                         IndexPath(item: 3, section: 0),
                         IndexPath(item: 4, section: 0),
                         IndexPath(item: 5, section: 0),
-                        IndexPath(item: 11, section: 0),
+                        IndexPath(item: 7, section: 0),
                     ]
                 )
                 XCTAssertEqual(
