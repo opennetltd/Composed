@@ -81,8 +81,8 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         // Note that updates are decomposed in to a delete and an insert, and element deletes are the first things to be processed so the section here is the original section
-                        IndexPath(item: 0, section: 2),
-                        IndexPath(item: 3, section: 2),
+                        IndexPath(item: 0, section: 1),
+                        IndexPath(item: 3, section: 1),
                     ]
                 )
             })
@@ -352,10 +352,10 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsUpdated,
                     [
-                        IndexPath(item: 0, section: 2),
-                        IndexPath(item: 1, section: 2),
-                        IndexPath(item: 2, section: 2),
-                        IndexPath(item: 3, section: 2),
+                        IndexPath(item: 0, section: 3),
+                        IndexPath(item: 1, section: 3),
+                        IndexPath(item: 2, section: 3),
+                        IndexPath(item: 3, section: 3),
                     ]
                 )
                 XCTAssertEqual(
@@ -403,10 +403,10 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsUpdated,
                     [
-                        IndexPath(item: 0, section: 2),
-                        IndexPath(item: 1, section: 2),
-                        IndexPath(item: 2, section: 2),
-                        IndexPath(item: 3, section: 2),
+                        IndexPath(item: 0, section: 3),
+                        IndexPath(item: 1, section: 3),
+                        IndexPath(item: 2, section: 3),
+                        IndexPath(item: 3, section: 3),
                     ]
                 )
                 XCTAssertEqual(
@@ -456,10 +456,10 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsUpdated,
                     [
-                        IndexPath(item: 0, section: 2),
-                        IndexPath(item: 1, section: 2),
-                        IndexPath(item: 2, section: 2),
-                        IndexPath(item: 3, section: 2),
+                        IndexPath(item: 0, section: 3),
+                        IndexPath(item: 1, section: 3),
+                        IndexPath(item: 2, section: 3),
+                        IndexPath(item: 3, section: 3),
                     ]
                 )
                 XCTAssertEqual(
@@ -1119,7 +1119,7 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
-                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
                     ]
                 )
                 XCTAssertEqual(
@@ -1191,24 +1191,25 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 0, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
                 XCTAssertEqual(
-                    changeset.elementsInserted,
+                    changeset.elementsRemoved,
                     [
-                        IndexPath(item: 3, section: 0),
+                        IndexPath(item: 0, section: 0),
                     ]
                 )
             })
 
         /**
-         - 0: New Element (inserted; reload)
+         - 0: New Element (inserted and removed)
          - 1: Element B
          - 2: Element C
-         - 3: Element D (new)
+         - 3: Element D (inserted)
          */
 
         AssertApplyingUpdates(
@@ -1218,7 +1219,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 0, section: 0),
+                        IndexPath(item: 2, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
                     [
                         IndexPath(item: 0, section: 0),
                         IndexPath(item: 2, section: 0),
@@ -1227,9 +1235,9 @@ final class ChangesReducerTests: XCTestCase {
             })
 
         /**
-         - 0: New Element (reloaded)
+         - 0: New Element (inserted and removed)
          - 1: Element B
-         - 2: Element D (new)
+         - 2: Element D (inserted)
          */
 
         AssertApplyingUpdates(
@@ -1255,7 +1263,7 @@ final class ChangesReducerTests: XCTestCase {
 
         /**
          - Element B
-         - Element D
+         - Element D (inserted)
          */
     }
 
@@ -1311,8 +1319,8 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsUpdated,
                     [
-                        IndexPath(item: 0, section: 2),
-                        IndexPath(item: 3, section: 2),
+                        IndexPath(item: 0, section: 1),
+                        IndexPath(item: 3, section: 1),
                     ]
                 )
                 XCTAssertEqual(
@@ -1942,7 +1950,13 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 2, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 2, section: 0),
                     ]
@@ -1983,7 +1997,7 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsUpdated,
                     [
-                        IndexPath(item: 3, section: 0),
+                        IndexPath(item: 2, section: 0),
                     ]
                 )
             })
@@ -2189,11 +2203,12 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     [
+                        IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
                     ]
                 )
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                     ]
@@ -2207,7 +2222,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2222,7 +2244,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2243,7 +2272,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2265,7 +2301,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2293,7 +2336,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2322,7 +2372,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2352,7 +2409,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2383,7 +2447,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2415,7 +2486,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2448,7 +2526,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2482,7 +2567,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2517,7 +2609,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2553,7 +2652,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2590,7 +2696,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2628,7 +2741,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2665,7 +2785,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 1),
+                        IndexPath(item: 2, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 1, section: 1),
                         IndexPath(item: 2, section: 1),
@@ -2725,7 +2852,11 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [IndexPath(item: 0, section: 0)]
                 )
             })
@@ -2760,7 +2891,13 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 0, section: 6),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 0, section: 6),
                     ]
@@ -2776,7 +2913,7 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
                     [
                         IndexPath(item: 0, section: 6),
                     ]
@@ -2785,6 +2922,7 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsInserted,
                     [
+                        IndexPath(item: 0, section: 6),
                         IndexPath(item: 1, section: 6),
                     ]
                 )
@@ -2799,8 +2937,17 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    [IndexPath(item: 0, section: 6)]
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 0, section: 6),
+                    ]
+                )
+
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 0, section: 6),
+                    ]
                 )
             })
 
@@ -2813,7 +2960,7 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
                     [
                         IndexPath(item: 0, section: 6),
                     ]
@@ -2822,6 +2969,7 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsInserted,
                     [
+                        IndexPath(item: 0, section: 6),
                         IndexPath(item: 1, section: 6),
                     ]
                 )
@@ -2857,13 +3005,13 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedIndexPaths = Set((0...22).map { IndexPath(item: $0, section: 6) })
+                let removedIndexPaths = Set((0...22).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedIndexPaths
+                    changeset.elementsRemoved,
+                    removedIndexPaths
                 )
 
-                let insertedIndexPaths = Set((23...30).map { IndexPath(item: $0, section: 6) })
+                let insertedIndexPaths = Set((0...30).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
                     changeset.elementsInserted,
                     insertedIndexPaths
@@ -2877,15 +3025,17 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    [IndexPath(item: 0, section: 6)]
-                )
-
-                let removedIndexPaths = Set((1...22).map { IndexPath(item: $0, section: 6) })
+                let removedIndexPaths = Set((0...22).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     removedIndexPaths
+                )
+
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 0, section: 6),
+                    ]
                 )
             })
 
@@ -2895,18 +3045,18 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
+                let removedIndexPaths = Set((0...22).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    removedIndexPaths
+                )
+
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [
                         IndexPath(item: 0, section: 6),
                         IndexPath(item: 1, section: 6),
                     ]
-                )
-
-                let removedIndexPaths = Set((2...22).map { IndexPath(item: $0, section: 6) })
-                XCTAssertEqual(
-                    changeset.elementsRemoved,
-                    removedIndexPaths
                 )
             })
     }
@@ -2976,12 +3126,12 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
+                let removedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedIndexPaths
+                    changeset.elementsRemoved,
+                    removedIndexPaths
                 )
-                let insertedIndexPaths = Set((20...50).map { IndexPath(item: $0, section: 6) })
+                let insertedIndexPaths = Set((0...50).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
                     changeset.elementsInserted,
                     insertedIndexPaths
@@ -2994,12 +3144,12 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
+                let removedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedIndexPaths
+                    changeset.elementsRemoved,
+                    removedIndexPaths
                 )
-                let insertedIndexPaths = Set((20...49).map { IndexPath(item: $0, section: 6) })
+                let insertedIndexPaths = Set((0...49).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
                     changeset.elementsInserted,
                     insertedIndexPaths
@@ -3013,12 +3163,12 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
+                let removedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedIndexPaths
+                    changeset.elementsRemoved,
+                    removedIndexPaths
                 )
-                let insertedIndexPaths = Set((20...27).map { IndexPath(item: $0, section: 6) })
+                let insertedIndexPaths = Set((0...27).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
                     changeset.elementsInserted,
                     insertedIndexPaths
@@ -3031,12 +3181,12 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
+                let removedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedIndexPaths
+                    changeset.elementsRemoved,
+                    removedIndexPaths
                 )
-                let insertedIndexPaths = Set((20...26).map { IndexPath(item: $0, section: 6) })
+                let insertedIndexPaths = Set((0...26).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
                     changeset.elementsInserted,
                     insertedIndexPaths
@@ -3064,12 +3214,12 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
+                let removedIndexPaths = Set((0...19).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedIndexPaths
+                    changeset.elementsRemoved,
+                    removedIndexPaths
                 )
-                let insertedIndexPaths = Set((20...50).map { IndexPath(item: $0, section: 6) })
+                let insertedIndexPaths = Set((0...50).map { IndexPath(item: $0, section: 6) })
                 XCTAssertEqual(
                     changeset.elementsInserted,
                     insertedIndexPaths
@@ -3174,7 +3324,7 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.elementsUpdated,
                     [
-                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 0, section: 0),
                     ]
                 )
             })
@@ -3383,11 +3533,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...3).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((4...5).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...3).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...5).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3401,11 +3551,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...3).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((4...4).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...3).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...4).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3443,11 +3593,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3461,11 +3611,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...20).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...20).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3479,11 +3629,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3497,11 +3647,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3515,11 +3665,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...20).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...20).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3533,11 +3683,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3551,11 +3701,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3569,11 +3719,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...20).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...20).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3587,11 +3737,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3605,11 +3755,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3623,11 +3773,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...20).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...20).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3641,11 +3791,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3659,11 +3809,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
-                let insertedElements = Set((7...21).map { IndexPath(item: $0, section: 0) })
+                let removedElements = Set((1...6).map { IndexPath(item: $0, section: 0) })
+                let insertedElements = Set((1...21).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
-                    updatedElements
+                    changeset.elementsRemoved,
+                    removedElements
                 )
                 XCTAssertEqual(
                     changeset.elementsInserted,
@@ -3699,7 +3849,11 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 1, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [IndexPath(item: 1, section: 0)]
                 )
             })
@@ -3711,7 +3865,11 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.elementsUpdated,
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 1, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
                     [IndexPath(item: 1, section: 0)]
                 )
             })
@@ -3776,7 +3934,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set([0, 1, 2].map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set((2...3).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -3794,7 +3952,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set([0, 1, 2, 3].map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4, 5].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set((2...3).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -3813,7 +3971,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set([0, 1, 2, 3].map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4, 5].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set([2, 3, 6, 7].map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -3832,7 +3990,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set([0, 1, 2, 3, 4, 5].map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4, 5, 8, 9].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set([2, 3, 6, 7].map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -3851,7 +4009,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set([0, 1, 2, 3, 4, 5].map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4, 5, 8, 9].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set([2, 3, 6, 7, 10, 11, 12].map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -3870,7 +4028,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((0...17).map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4, 5, 8, 9, 13, 14, 15, 16 , 17, 18, 19, 20, 21, 22, 23, 24].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set([2, 3, 6, 7, 10, 11, 12].map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -3888,7 +4046,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((0...17).map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4, 5, 8, 9, 13, 14, 15, 16 , 17, 18, 19, 20, 21, 22, 23, 24].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set([2, 3, 6, 7, 10, 11, 12, 25].map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -3907,7 +4065,7 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((0...29).map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4, 5, 8, 9, 13, 14, 15, 16 , 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set([2, 3, 6, 7, 10, 11, 12, 25].map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -3926,13 +4084,11 @@ final class ChangesReducerTests: XCTestCase {
             },
             changesReducer: &changesReducer,
             produces: { changeset in
-                let updatedElements = Set((0...29).map { IndexPath(item: $0, section: 0) })
+                let updatedElements = Set([0, 1, 4, 5, 8, 9, 13, 14, 15, 16 , 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37].map { IndexPath(item: $0, section: 0) })
                 let insertedElements = Set(
                     (
-                        [2, 3, 6, 7, 10, 11, 12, 25]
-                            + (38...57)
-                    ).map { IndexPath(item: $0, section: 0) }
-                )
+                        [2, 3, 6, 7, 10, 11, 12, 25] + (38...57)
+                    ).map { IndexPath(item: $0, section: 0) })
                 XCTAssertEqual(
                     changeset.elementsUpdated,
                     updatedElements
@@ -4041,6 +4197,19 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
                         IndexPath(item: 1, section: 0),
                         IndexPath(item: 2, section: 0),
                         IndexPath(item: 3, section: 0),
@@ -4058,10 +4227,23 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
+                        IndexPath(item: 4, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [
                         IndexPath(item: 1, section: 0),
                         IndexPath(item: 2, section: 0),
                         IndexPath(item: 3, section: 0),
-                        IndexPath(item: 4, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
             })
@@ -4076,16 +4258,24 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
-                        IndexPath(item: 1, section: 0),
-                        IndexPath(item: 2, section: 0),
-                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 4, section: 0),
                     ]
                 )
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 5, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
             })
@@ -4100,17 +4290,25 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
-                        IndexPath(item: 1, section: 0),
-                        IndexPath(item: 2, section: 0),
-                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 4, section: 0),
                     ]
                 )
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 5, section: 0),
                         IndexPath(item: 7, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
             })
@@ -4125,18 +4323,26 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
-                        IndexPath(item: 1, section: 0),
-                        IndexPath(item: 2, section: 0),
-                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 4, section: 0),
                     ]
                 )
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 5, section: 0),
                         IndexPath(item: 6, section: 0),
                         IndexPath(item: 7, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
             })
@@ -4151,19 +4357,27 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
-                        IndexPath(item: 1, section: 0),
-                        IndexPath(item: 2, section: 0),
-                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 4, section: 0),
-                        IndexPath(item: 8, section: 0),
+                        IndexPath(item: 5, section: 0),
                     ]
                 )
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 5, section: 0),
                         IndexPath(item: 6, section: 0),
                         IndexPath(item: 7, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
             })
@@ -4182,22 +4396,30 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
-                        IndexPath(item: 1, section: 0),
-                        IndexPath(item: 2, section: 0),
-                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 4, section: 0),
-                        IndexPath(item: 8, section: 0),
-                        IndexPath(item: 9, section: 0),
-                        IndexPath(item: 13, section: 0),
-                        IndexPath(item: 14, section: 0),
+                        IndexPath(item: 5, section: 0),
+                        IndexPath(item: 6, section: 0),
+                        IndexPath(item: 10, section: 0),
+                        IndexPath(item: 11, section: 0),
                     ]
                 )
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 5, section: 0),
                         IndexPath(item: 6, section: 0),
                         IndexPath(item: 7, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
             })
@@ -4212,23 +4434,30 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.elementsUpdated,
                     [
                         IndexPath(item: 0, section: 0),
-                        IndexPath(item: 1, section: 0),
-                        IndexPath(item: 2, section: 0),
-                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 4, section: 0),
-                        IndexPath(item: 8, section: 0),
-                        IndexPath(item: 9, section: 0),
-                        IndexPath(item: 13, section: 0),
-                        IndexPath(item: 14, section: 0),
+                        IndexPath(item: 5, section: 0),
+                        IndexPath(item: 6, section: 0),
+                        IndexPath(item: 11, section: 0),
                     ]
                 )
                 XCTAssertEqual(
                     changeset.elementsRemoved,
                     [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                         IndexPath(item: 5, section: 0),
                         IndexPath(item: 6, section: 0),
                         IndexPath(item: 7, section: 0),
                         IndexPath(item: 13, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 1, section: 0),
+                        IndexPath(item: 2, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
             })

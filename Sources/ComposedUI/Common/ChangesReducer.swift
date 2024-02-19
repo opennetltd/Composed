@@ -77,12 +77,6 @@ internal struct ChangesReducer: CustomReflectable {
             changeset.groupsInserted.remove(updatedGroup)
             changeset.groupsUpdated.insert(updatedGroup)
         }
-        let updatedElements = changeset.elementsRemoved.intersection(changeset.elementsInserted)
-        updatedElements.forEach { updatedElement in
-            changeset.elementsRemoved.remove(updatedElement)
-            changeset.elementsInserted.remove(updatedElement)
-            changeset.elementsUpdated.insert(updatedElement)
-        }
         self.changeset = Changeset()
         return changeset
     }
@@ -113,6 +107,16 @@ internal struct ChangesReducer: CustomReflectable {
                 }
 
                 return insertedIndexPath
+            })
+
+            changeset.elementsUpdated = Set(changeset.elementsUpdated.map { updatedIndexPath in
+                var updatedIndexPath = updatedIndexPath
+
+                if updatedIndexPath.section >= insertedGroup {
+                    updatedIndexPath.section += 1
+                }
+
+                return updatedIndexPath
             })
 
             changeset.elementsMoved = Set(changeset.elementsMoved.map { move in
@@ -184,6 +188,18 @@ internal struct ChangesReducer: CustomReflectable {
                 }
 
                 return batchedRowInsert
+            })
+
+            changeset.elementsUpdated = Set(changeset.elementsUpdated.compactMap { updatedIndexPath in
+                guard updatedIndexPath.section != removedGroup else { return nil }
+
+                var updatedIndexPath = updatedIndexPath
+
+                if updatedIndexPath.section > removedGroup {
+                    updatedIndexPath.section -= 1
+                }
+
+                return updatedIndexPath
             })
 
             changeset.elementsMoved = Set(changeset.elementsMoved.compactMap { move in
@@ -276,14 +292,10 @@ internal struct ChangesReducer: CustomReflectable {
     internal mutating func updateElements(at indexPaths: [IndexPath]) {
         indexPaths.sorted(by: { $0.item > $1.item }).forEach { updatedElement in
             guard !changeset.elementsInserted.contains(updatedElement) else { return }
+            guard !changeset.groupsUpdated.contains(updatedElement.section) else { return }
+            guard !changeset.groupsInserted.contains(updatedElement.section) else { return }
 
-            let updatedElement = transformIndexPath(updatedElement)
-
-            if !changeset.groupsInserted.contains(updatedElement.section),
-               !changeset.groupsUpdated.contains(updatedElement.section)
-            {
-                changeset.elementsUpdated.insert(updatedElement)
-            }
+            changeset.elementsUpdated.insert(updatedElement)
         }
     }
 
