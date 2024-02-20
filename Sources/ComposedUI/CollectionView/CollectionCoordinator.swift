@@ -397,8 +397,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
             collectionView.insertItems(at: Array(changeset.elementsInserted))
 
             elementsUpdated = changeset.elementsUpdated
-//            debugLog("Reloading items \(changeset.elementsUpdated.sorted(by: <))")
-//            collectionView.reloadItems(at: Array(changeset.elementsUpdated))
 
             changeset.elementsMoved.forEach { move in
                 debugLog("Moving \(move.from) to \(move.to)")
