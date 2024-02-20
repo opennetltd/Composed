@@ -238,6 +238,21 @@ internal struct ChangesReducer: CustomReflectable {
                 return existingInsertedIndexPath
             })
 
+            changeset.elementsUpdated = Set(changeset.elementsUpdated.map { existingUpdatedIndexPath in
+                guard existingUpdatedIndexPath.section == insertedIndexPath.section else {
+                    // Different section; don't modify
+                    return existingUpdatedIndexPath
+                }
+
+                var existingUpdatedIndexPath = existingUpdatedIndexPath
+
+                if existingUpdatedIndexPath.item >= insertedIndexPath.item {
+                    existingUpdatedIndexPath.item += 1
+                }
+
+                return existingUpdatedIndexPath
+            })
+
             changeset.elementsInserted.insert(insertedIndexPath)
         }
     }
@@ -258,10 +273,6 @@ internal struct ChangesReducer: CustomReflectable {
                 changeset.elementsRemoved.insert(removedIndexPath)
             }
 
-            changeset.elementsUpdated = Set(changeset.elementsUpdated.filter { existingUpdatedIndexPath in
-                return existingUpdatedIndexPath != originalRemovedIndexPath
-            })
-
             changeset.elementsInserted = Set(changeset.elementsInserted.compactMap { existingInsertedIndexPath in
                 guard existingInsertedIndexPath.section == originalRemovedIndexPath.section else {
                     // Different section; don't modify
@@ -277,6 +288,23 @@ internal struct ChangesReducer: CustomReflectable {
                 }
 
                 return existingInsertedIndexPath
+            })
+
+            changeset.elementsUpdated = Set(changeset.elementsUpdated.compactMap { existingUpdatedIndexPath in
+                guard existingUpdatedIndexPath.section == originalRemovedIndexPath.section else {
+                    // Different section; don't modify
+                    return existingUpdatedIndexPath
+                }
+
+                var existingUpdatedIndexPath = existingUpdatedIndexPath
+
+                if existingUpdatedIndexPath.item > originalRemovedIndexPath.item {
+                    existingUpdatedIndexPath.item -= 1
+                } else if existingUpdatedIndexPath.item == originalRemovedIndexPath.item {
+                    return nil
+                }
+
+                return existingUpdatedIndexPath
             })
         }
     }

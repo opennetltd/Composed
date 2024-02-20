@@ -4456,7 +4456,7 @@ final class ChangesReducerTests: XCTestCase {
                         IndexPath(item: 4, section: 0),
                         IndexPath(item: 5, section: 0),
                         IndexPath(item: 6, section: 0),
-                        IndexPath(item: 11, section: 0),
+                        IndexPath(item: 10, section: 0),
                     ]
                 )
                 XCTAssertEqual(
@@ -4522,7 +4522,7 @@ final class ChangesReducerTests: XCTestCase {
                         IndexPath(item: 0, section: 0),
                         IndexPath(item: 1, section: 0),
                         IndexPath(item: 2, section: 0),
-                        IndexPath(item: 4, section: 0),
+                        IndexPath(item: 3, section: 0),
                     ]
                 )
                 XCTAssertEqual(
@@ -4988,6 +4988,147 @@ final class ChangesReducerTests: XCTestCase {
                         IndexPath(item: 9, section: 0),
                         IndexPath(item: 10, section: 0),
                         IndexPath(item: 11, section: 0),
+                    ]
+                )
+            }
+        )
+    }
+
+    func testInsertItemBeforeReload() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.updateElements(
+                    at: [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertElements(
+                    at: [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [
+                        IndexPath(item: 2, section: 0),
+                    ]
+                )
+            }
+        )
+    }
+
+    func testRemoveItemBeforeReload() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.updateElements(
+                    at: [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeElements(
+                    at: [
+                        IndexPath(item: 0, section: 0),
+                    ]
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 0, section: 0),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [
+                        IndexPath(item: 0, section: 0),
+                    ]
+                )
+            }
+        )
+    }
+
+    func testRemoveReloadedItem() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.updateElements(
+                    at: [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeElements(
+                    at: [
+                        IndexPath(item: 1, section: 0),
+                    ]
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [
+                        IndexPath(item: 1, section: 0),
                     ]
                 )
             }
