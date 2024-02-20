@@ -272,7 +272,7 @@ internal struct ChangesReducer: CustomReflectable {
 
                 var existingInsertedIndexPath = existingInsertedIndexPath
 
-                if existingInsertedIndexPath.item > removedIndexPath.item {
+                if existingInsertedIndexPath.item > originalRemovedIndexPath.item {
                     existingInsertedIndexPath.item -= 1
                 } else if existingInsertedIndexPath.item == originalRemovedIndexPath.item {
                     return nil
@@ -333,15 +333,8 @@ internal struct ChangesReducer: CustomReflectable {
     /// - Parameter section: The section index to the item belongs to.
     /// - Returns: The transformed item index.
     private func transformItem(_ item: Int, inSection section: Int) -> Int {
-        /// This is a collection of all the items in the current section that
-        /// will be coalesced in to a reload, but are not yet in the `elementsReloaded`.
-        let itemsReloaded = changeset.elementsRemoved
-            .intersection(changeset.elementsInserted)
-            .filter({ $0.section == section })
-            .map(\.item)
-
         func isIncluded(indexPath: IndexPath) -> Bool {
-            indexPath.section == section && !itemsReloaded.contains(indexPath.item)
+            indexPath.section == section
         }
 
         let itemsRemoved = changeset.elementsRemoved.filter(isIncluded(indexPath:)).map(\.item)
