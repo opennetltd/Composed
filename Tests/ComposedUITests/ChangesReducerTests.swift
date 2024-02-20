@@ -4904,8 +4904,7 @@ final class ChangesReducerTests: XCTestCase {
 
         // The below update used to produce an invalid changeset, which would cause the collection
         // view to trigger a crash.  After removing synthesized reloads as part of moving reloads to
-        // their own batch updates this now produces an invalid update that causes the collection
-        // view to fall back to reloadData.
+        // their own batch updates this was fixed.
 
         AssertApplyingUpdates(
             { changesReducer in
