@@ -254,15 +254,10 @@ internal struct ChangesReducer: CustomReflectable {
 
             guard !changeset.groupsInserted.contains(removedIndexPath.section), !changeset.groupsUpdated.contains(removedIndexPath.section) else { return }
 
-            let isInInserted = changeset.elementsInserted.contains(removedIndexPath)
             let originalWasInInserted = changeset.elementsInserted.contains(originalRemovedIndexPath)
 
-            defer {
-                if !isInInserted {
-                    changeset.elementsRemoved.insert(removedIndexPath)
-                } else if removedIndexPath.item != originalRemovedIndexPath.item, !originalWasInInserted {
-                    changeset.elementsUpdated.insert(removedIndexPath)
-                }
+            if !originalWasInInserted {
+                changeset.elementsRemoved.insert(removedIndexPath)
             }
 
             changeset.elementsUpdated = Set(changeset.elementsUpdated.filter { existingUpdatedIndexPath in
@@ -270,17 +265,16 @@ internal struct ChangesReducer: CustomReflectable {
             })
 
             changeset.elementsInserted = Set(changeset.elementsInserted.compactMap { existingInsertedIndexPath in
-                guard existingInsertedIndexPath.section == removedIndexPath.section else {
+                guard existingInsertedIndexPath.section == originalRemovedIndexPath.section else {
                     // Different section; don't modify
                     return existingInsertedIndexPath
                 }
 
                 var existingInsertedIndexPath = existingInsertedIndexPath
 
-                if existingInsertedIndexPath.item > removedIndexPath.item/*, !changeset.elementsRemoved.contains(existingInsertedIndexPath)*/
-                {
+                if existingInsertedIndexPath.item > removedIndexPath.item {
                     existingInsertedIndexPath.item -= 1
-                } else if existingInsertedIndexPath.item == removedIndexPath.item {
+                } else if existingInsertedIndexPath.item == originalRemovedIndexPath.item {
                     return nil
                 }
 
