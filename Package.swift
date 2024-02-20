@@ -1,10 +1,10 @@
-// swift-tools-version:5.2
+// swift-tools-version: 5.5
 import PackageDescription
 
 let package = Package(
     name: "Composed",
     platforms: [
-        .iOS(.v11)
+        .iOS(.v13)
     ],
     products: [
         .library(

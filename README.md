@@ -7,8 +7,6 @@ The primary benefits of using Composed include:
 - The library makes heavy use of protocol-oriented design allowing your types to opt-in to behaviour rather than inherit it by default.
 - Each section is isolated from the others, removing the need to think about how the data is composed.
 
-> If you prefer to look at code, there's a demo project here: [ComposedDemo](http://github.com/composed-swift/composed-demo)
-
 The package contains 3 libraries, each built on top of each other:
 
 - Composed
@@ -53,25 +51,6 @@ If the stored value is `nil` it will return `0` for `numberOfElements`, allowing
 #### `FlatSection`
 
 A `FlatSection` behaved similarly to a `ComposedSectionProvider` but rather than providing a collections of sections it returns a single section that contains every element in the flattened collection of `Section`s and `SectionProvider`s. This has limited use for data alone but proves useful when representing the data in the UI; `FlatSection` allows for multiple sections to be displayed in a single UI section, enabling features such as headers that pin to visible bounds ("sticky headers").
-
-#### `ManagedSection`
-
-`ManagedSection` wraps an `NSManagedObjectContext` and responds to the `NSFetchedResultsControllerDelegate` functions by forwarding them to the `SectionUpdateDelegate`. This enables a single data hierarchy to include a mixture of sections that are backed by core data and other storage mechanisms.
-
-### `SectionProvider`s
-
-`SectionProvider`s are the next layer up, dealing with `Section`s directly by providing an ordered collection of sections:
-
-```swift
-/// Represents a collection of `Section`'s.
-public protocol SectionProvider: AnyObject {
-    /// The child sections contained in this provider
-    var sections: [Section] { get }
-
-    /// The delegate that will respond to updates
-    var updateDelegate: SectionProviderUpdateDelegate? { get set }
-}
-```
 
 #### `ComposedSectionProvider`
 
@@ -122,12 +101,6 @@ contacts.numberOfElements // 3
 
 The `ComposedUI` library builds on top of `Composed` by providing protocols that enable `Section`s to provide UI elements that can then be displayed by a view coordinator.
 
-### UI Coordinators
-
-Various coordinators are provided that enable interfacing with `UIKit` by adding extra protocol conformances to your `Section`s.
-
-#### `CollectionCoordinator`
+### `CollectionCoordinator`
 
 `CollectionCoordinator` allows for the most flexible UIs by coordinating with a `UICollectionView`.
-
-View the [`CollectionCoordinator` README.md](./Sources/ComposedUI/CollectionView/README.md) to learn more.
