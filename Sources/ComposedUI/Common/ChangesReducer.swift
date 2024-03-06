@@ -141,6 +141,18 @@ internal struct ChangesReducer: CustomReflectable {
 
     internal mutating func removeGroups(_ groups: IndexSet) {
         groups.sorted(by: >).forEach { removedGroup in
+            changeset.elementsUpdated = Set(changeset.elementsUpdated.compactMap { updatedIndexPath in
+                guard updatedIndexPath.section != removedGroup else { return nil }
+
+                var updatedIndexPath = updatedIndexPath
+
+                if updatedIndexPath.section > removedGroup {
+                    updatedIndexPath.section -= 1
+                }
+
+                return updatedIndexPath
+            })
+
             var removedGroup = removedGroup
             let groupsInsertedBefore = changeset.groupsInserted.filter { $0 < removedGroup }.count
 
@@ -186,18 +198,6 @@ internal struct ChangesReducer: CustomReflectable {
                 }
 
                 return batchedRowInsert
-            })
-
-            changeset.elementsUpdated = Set(changeset.elementsUpdated.compactMap { updatedIndexPath in
-                guard updatedIndexPath.section != removedGroup else { return nil }
-
-                var updatedIndexPath = updatedIndexPath
-
-                if updatedIndexPath.section > removedGroup {
-                    updatedIndexPath.section -= 1
-                }
-
-                return updatedIndexPath
             })
 
             changeset.elementsMoved = Set(changeset.elementsMoved.compactMap { move in
