@@ -5248,6 +5248,76 @@ final class ChangesReducerTests: XCTestCase {
         )
     }
 
+    func testUpdateElementsRemoveSections_InsertSections_UpdateElements() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.updateElements(
+                    at: [
+                        IndexPath(item: 1, section: 2),
+                    ]
+                )
+                changesReducer.updateElements(
+                    at: [
+                        IndexPath(item: 1, section: 2),
+                        IndexPath(item: 0, section: 4),
+                    ]
+                )
+                changesReducer.removeGroups([1])
+                changesReducer.removeGroups([2])
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [
+                        IndexPath(item: 0, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                        2,
+                        3,
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([2])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [
+                        IndexPath(item: 0, section: 1),
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                        2,
+                        3,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [
+                        2,
+                    ]
+                )
+            }
+        )
+    }
+
     // MARK:- Unfinished Tests
 
 //    func testGroupInserts() {
