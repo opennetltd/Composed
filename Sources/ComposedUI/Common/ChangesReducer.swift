@@ -70,6 +70,8 @@ internal struct ChangesReducer: CustomReflectable {
             return nil
         }
 
+        #warning("TODO: Remove synthesising of updated groups")
+//        let changeset = self.changeset
         var changeset = self.changeset
         let updatedGroups = changeset.groupsRemoved.intersection(changeset.groupsInserted)
         updatedGroups.forEach { updatedGroup in
@@ -83,6 +85,7 @@ internal struct ChangesReducer: CustomReflectable {
 
     internal mutating func insertGroups(_ groups: IndexSet) {
         groups.forEach { insertedGroup in
+            #warning("TODO: Remove use of groupsUpdated")
             let insertedGroup = insertedGroup + changeset.groupsUpdated.filter { $0 >= insertedGroup }.count
 
             changeset.groupsInserted = Set(changeset.groupsInserted.map { existingInsertedGroup in
@@ -93,6 +96,8 @@ internal struct ChangesReducer: CustomReflectable {
                 return existingInsertedGroup
             })
 
+            #warning("TODO: Remove synthesising of updated groups")
+//            changeset.groupsInserted.insert(insertedGroup)
             if changeset.groupsRemoved.remove(insertedGroup) != nil {
                 changeset.groupsUpdated.insert(insertedGroup)
             } else {
@@ -165,6 +170,8 @@ internal struct ChangesReducer: CustomReflectable {
                     return insertedGroup
                 })
             } else if changeset.groupsInserted.remove(removedGroup - groupsInsertedBefore) != nil {
+                // The same section was added then removed in the same batch; we don't need this any more.
+                #warning("TODO: Remove inserting in to updated groups")
                 changeset.groupsUpdated.insert(removedGroup - groupsInsertedBefore)
             } else {
                 changeset.groupsInserted = Set(changeset.groupsInserted.map { insertedGroup in
@@ -220,6 +227,7 @@ internal struct ChangesReducer: CustomReflectable {
 
     internal mutating func insertElements(at indexPaths: [IndexPath]) {
         indexPaths.forEach { insertedIndexPath in
+            #warning("TODO: Allow insertions in to updated groups")
             guard !changeset.groupsUpdated.contains(insertedIndexPath.section) else { return }
             guard !changeset.groupsInserted.contains(insertedIndexPath.section) else { return }
 
@@ -265,6 +273,7 @@ internal struct ChangesReducer: CustomReflectable {
             let originalRemovedIndexPath = removedIndexPath
             let removedIndexPath = transformIndexPath(removedIndexPath)
 
+            #warning("TODO: Allow element removals even when a group is updated?")
             guard !changeset.groupsInserted.contains(removedIndexPath.section), !changeset.groupsUpdated.contains(removedIndexPath.section) else { return }
 
             let originalWasInInserted = changeset.elementsInserted.contains(originalRemovedIndexPath)
