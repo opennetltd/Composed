@@ -198,8 +198,6 @@ extension TableCoordinator: SectionProviderMappingDelegate {
 
             tableView.deleteRows(at: Array(changeset.elementsRemoved), with: .automatic)
 
-            tableView.reloadSections(IndexSet(changeset.groupsUpdated), with: .automatic)
-
             tableView.insertRows(at: Array(changeset.elementsInserted), with: .automatic)
 
             tableView.reloadRows(at: Array(changeset.elementsUpdated), with: .automatic)
