@@ -16,7 +16,6 @@ public struct Changeset {
 
     public var groupsInserted: Set<Int> = []
     public var groupsRemoved: Set<Int> = []
-    public var groupsUpdated: Set<Int> = []
     public var elementsRemoved: Set<IndexPath> = []
     public var elementsInserted: Set<IndexPath> = []
     public var elementsMoved: Set<Move> = []

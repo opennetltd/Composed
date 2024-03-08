@@ -143,8 +143,6 @@ internal struct ChangesReducer: CustomReflectable {
                 return updatedIndexPath
             })
 
-            changeset.groupsUpdated.remove(removedGroup)
-
             if changeset.groupsInserted.remove(removedGroup) != nil {
                 changeset.groupsInserted = Set(changeset.groupsInserted.map { insertedGroup in
                     if insertedGroup > removedGroup {
@@ -201,8 +199,6 @@ internal struct ChangesReducer: CustomReflectable {
 
     internal mutating func insertElements(at indexPaths: [IndexPath]) {
         indexPaths.forEach { insertedIndexPath in
-            #warning("TODO: Allow insertions in to updated groups")
-            guard !changeset.groupsUpdated.contains(insertedIndexPath.section) else { return }
             guard !changeset.groupsInserted.contains(insertedIndexPath.section) else { return }
 
             changeset.elementsInserted = Set(changeset.elementsInserted.map { existingInsertedIndexPath in
@@ -247,8 +243,7 @@ internal struct ChangesReducer: CustomReflectable {
             let originalRemovedIndexPath = removedIndexPath
             let removedIndexPath = transformIndexPath(removedIndexPath)
 
-            #warning("TODO: Allow element removals even when a group is updated?")
-            guard !changeset.groupsInserted.contains(removedIndexPath.section), !changeset.groupsUpdated.contains(removedIndexPath.section) else { return }
+            guard !changeset.groupsInserted.contains(removedIndexPath.section) else { return }
 
             let originalWasInInserted = changeset.elementsInserted.contains(originalRemovedIndexPath)
 
@@ -295,7 +290,6 @@ internal struct ChangesReducer: CustomReflectable {
     internal mutating func updateElements(at indexPaths: [IndexPath]) {
         indexPaths.sorted(by: { $0.item > $1.item }).forEach { updatedElement in
             guard !changeset.elementsInserted.contains(updatedElement) else { return }
-            guard !changeset.groupsUpdated.contains(updatedElement.section) else { return }
             guard !changeset.groupsInserted.contains(updatedElement.section) else { return }
 
             changeset.elementsUpdated.insert(updatedElement)

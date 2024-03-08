@@ -6128,15 +6128,6 @@ private final class ChangesetChecker {
                 line: line
             )
         }
-        if !checkedKeyPaths.contains(\Changeset.groupsUpdated) {
-            XCTAssertEqual(
-                changeset.groupsUpdated,
-                [],
-                "No groups should have been updates",
-                file: file,
-                line: line
-            )
-        }
         if !checkedKeyPaths.contains(\Changeset.elementsRemoved) {
             XCTAssertEqual(
                 changeset.elementsRemoved,
