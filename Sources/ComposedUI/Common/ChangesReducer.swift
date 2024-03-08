@@ -70,23 +70,14 @@ internal struct ChangesReducer: CustomReflectable {
             return nil
         }
 
-        #warning("TODO: Remove synthesising of updated groups")
-//        let changeset = self.changeset
-        var changeset = self.changeset
-        let updatedGroups = changeset.groupsRemoved.intersection(changeset.groupsInserted)
-        updatedGroups.forEach { updatedGroup in
-            changeset.groupsRemoved.remove(updatedGroup)
-            changeset.groupsInserted.remove(updatedGroup)
-            changeset.groupsUpdated.insert(updatedGroup)
-        }
+        let changeset = self.changeset
         self.changeset = Changeset()
         return changeset
     }
 
     internal mutating func insertGroups(_ groups: IndexSet) {
         groups.forEach { insertedGroup in
-            #warning("TODO: Remove use of groupsUpdated")
-            let insertedGroup = insertedGroup + changeset.groupsUpdated.filter { $0 >= insertedGroup }.count
+            let insertedGroup = insertedGroup
 
             changeset.groupsInserted = Set(changeset.groupsInserted.map { existingInsertedGroup in
                 if existingInsertedGroup >= insertedGroup {
@@ -96,13 +87,7 @@ internal struct ChangesReducer: CustomReflectable {
                 return existingInsertedGroup
             })
 
-            #warning("TODO: Remove synthesising of updated groups")
-//            changeset.groupsInserted.insert(insertedGroup)
-            if changeset.groupsRemoved.remove(insertedGroup) != nil {
-                changeset.groupsUpdated.insert(insertedGroup)
-            } else {
-                changeset.groupsInserted.insert(insertedGroup)
-            }
+            changeset.groupsInserted.insert(insertedGroup)
 
             changeset.elementsInserted = Set(changeset.elementsInserted.map { insertedIndexPath in
                 var insertedIndexPath = insertedIndexPath
@@ -158,10 +143,9 @@ internal struct ChangesReducer: CustomReflectable {
                 return updatedIndexPath
             })
 
-            var removedGroup = removedGroup
-            let groupsInsertedBefore = changeset.groupsInserted.filter { $0 < removedGroup }.count
+            changeset.groupsUpdated.remove(removedGroup)
 
-            if changeset.groupsInserted.remove(removedGroup) != nil || changeset.groupsUpdated.remove(removedGroup) != nil {
+            if changeset.groupsInserted.remove(removedGroup) != nil {
                 changeset.groupsInserted = Set(changeset.groupsInserted.map { insertedGroup in
                     if insertedGroup > removedGroup {
                         return insertedGroup - 1
@@ -169,11 +153,9 @@ internal struct ChangesReducer: CustomReflectable {
 
                     return insertedGroup
                 })
-            } else if changeset.groupsInserted.remove(removedGroup - groupsInsertedBefore) != nil {
-                // The same section was added then removed in the same batch; we don't need this any more.
-                #warning("TODO: Remove inserting in to updated groups")
-                changeset.groupsUpdated.insert(removedGroup - groupsInsertedBefore)
             } else {
+                let transformedRemovedGroup = transformSection(removedGroup)
+
                 changeset.groupsInserted = Set(changeset.groupsInserted.map { insertedGroup in
                     if insertedGroup > removedGroup {
                         return insertedGroup - 1
@@ -182,15 +164,7 @@ internal struct ChangesReducer: CustomReflectable {
                     return insertedGroup
                 })
 
-                let availableSpaces = (0..<Int.max)
-                    .lazy
-                    .filter { [groupsRemoved = changeset.groupsRemoved] in
-                        return !groupsRemoved.contains($0)
-                    }
-                let availableSpaceIndex = availableSpaces.index(availableSpaces.startIndex, offsetBy: removedGroup)
-                removedGroup = availableSpaces[availableSpaceIndex]
-
-                changeset.groupsRemoved.insert(removedGroup)
+                changeset.groupsRemoved.insert(transformedRemovedGroup)
             }
 
             changeset.elementsRemoved = Set(changeset.elementsRemoved.filter { $0.section != removedGroup })
@@ -355,7 +329,8 @@ internal struct ChangesReducer: CustomReflectable {
         let groupsInserted = changeset.groupsInserted
         let availableSpaces = (0..<Int.max)
             .lazy
-            .filter { !groupsRemoved.contains($0) || groupsInserted.contains($0) }
+            .filter { !groupsRemoved.contains($0) }
+        let section = section - groupsInserted.filter { $0 < section }.count
         let availableSpaceIndex = availableSpaces.index(availableSpaces.startIndex, offsetBy: section)
 
         return availableSpaces[availableSpaceIndex]

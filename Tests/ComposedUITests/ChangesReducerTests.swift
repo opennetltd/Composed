@@ -110,7 +110,11 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [0]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [0]
                 )
                 XCTAssertEqual(
@@ -146,7 +150,11 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [0]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [0]
                 )
                 XCTAssertEqual(
@@ -182,7 +190,11 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [0]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [0]
                 )
                 XCTAssertEqual(
@@ -219,7 +231,11 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [0]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [0]
                 )
                 XCTAssertEqual(
@@ -253,12 +269,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0]
+                    changeset.groupsRemoved,
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsRemoved,
-                    [3]
+                    changeset.groupsInserted,
+                    [0]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -292,12 +308,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0]
+                    changeset.groupsRemoved,
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsRemoved,
-                    [3]
+                    changeset.groupsInserted,
+                    [0]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -338,16 +354,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [1]
-                )
-                XCTAssertEqual(
                     changeset.groupsRemoved,
-                    [3]
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0]
+                    changeset.groupsInserted,
+                    [0, 1]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -389,16 +401,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [1, 4]
-                )
-                XCTAssertEqual(
                     changeset.groupsRemoved,
-                    [3]
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0]
+                    changeset.groupsInserted,
+                    [0, 1, 4]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -442,16 +450,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [1, 4, 5]
-                )
-                XCTAssertEqual(
                     changeset.groupsRemoved,
-                    [3]
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0]
+                    changeset.groupsInserted,
+                    [0, 1, 4, 5]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -494,12 +498,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4]
+                    changeset.groupsRemoved,
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 3]
+                    changeset.groupsInserted,
+                    [0, 3, 4]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -543,12 +547,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4, 5]
+                    changeset.groupsRemoved,
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 3]
+                    changeset.groupsInserted,
+                    [0, 3, 4, 5]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -596,12 +600,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4, 5, 6]
+                    changeset.groupsRemoved,
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 3]
+                    changeset.groupsInserted,
+                    [0, 3, 4, 5, 6]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -648,12 +652,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4, 5, 6]
+                    changeset.groupsRemoved,
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 3]
+                    changeset.groupsInserted,
+                    [0, 3, 4, 5, 6]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -701,12 +705,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4, 5, 6]
+                    changeset.groupsRemoved,
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 3]
+                    changeset.groupsInserted,
+                    [0, 3, 4, 5, 6]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -755,12 +759,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4, 5, 6]
+                    changeset.groupsRemoved,
+                    [0, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 3]
+                    changeset.groupsInserted,
+                    [0, 3, 4, 5, 6]
                 )
                 XCTAssertEqual(
                     changeset.elementsUpdated,
@@ -803,16 +807,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [3, 4, 5]
-                )
-                XCTAssertEqual(
                     changeset.groupsRemoved,
-                    [2]
+                    [0, 2, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 3]
+                    changeset.groupsInserted,
+                    [0, 2, 3, 4, 5]
                 )
             })
 
@@ -835,12 +835,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4]
+                    changeset.groupsRemoved,
+                    [0, 2, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 2, 3]
+                    changeset.groupsInserted,
+                    [0, 2, 3, 4]
                 )
             })
 
@@ -864,12 +864,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4, 5]
+                    changeset.groupsRemoved,
+                    [0, 2, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 2, 3]
+                    changeset.groupsInserted,
+                    [0, 2, 3, 4, 5]
                 )
             })
 
@@ -898,12 +898,12 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsInserted,
-                    [4, 5]
+                    changeset.groupsRemoved,
+                    [0, 2, 3]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [0, 2, 3]
+                    changeset.groupsInserted,
+                    [0, 2, 3, 4, 5]
                 )
             })
     }
@@ -1514,7 +1514,7 @@ final class ChangesReducerTests: XCTestCase {
                 XCTAssertEqual(
                     changeset.groupsRemoved,
                     [
-                        0
+                        0,
                     ]
                 )
             })
@@ -1526,7 +1526,13 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [
+                        0,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [
                         0,
                     ]
@@ -1540,14 +1546,15 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
                     [
-                        0
+                        0,
                     ]
                 )
                 XCTAssertEqual(
                     changeset.groupsInserted,
                     [
+                        0,
                         1,
                     ]
                 )
@@ -1560,9 +1567,15 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
                     [
-                        0
+                        0,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [
+                        0,
                     ]
                 )
             })
@@ -1850,7 +1863,13 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [
+                        0,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [
                         0,
                     ]
@@ -1883,7 +1902,13 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [
+                        0,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [
                         0,
                     ]
@@ -1897,14 +1922,15 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
                     [
-                        0
+                        0,
                     ]
                 )
                 XCTAssertEqual(
                     changeset.groupsInserted,
                     [
+                        0,
                         1,
                     ]
                 )
@@ -1917,7 +1943,13 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [
+                        0,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [
                         0,
                     ]
@@ -2036,6 +2068,148 @@ final class ChangesReducerTests: XCTestCase {
             })
     }
 
+    func testRemovingInsertedSection() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [
+                        1,
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1, 4])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [
+                        1,
+                        4,
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([4])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [
+                        1,
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([4])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [
+                        1,
+                        4,
+                    ]
+                )
+            }
+        )
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [
+                        1,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [
+                        3,
+                    ]
+                )
+            }
+        )
+    }
+
     func testRemoveSectionsWithLowerIndexesThanInsertedSections() {
         var changesReducer = ChangesReducer()
         changesReducer.beginUpdating()
@@ -2146,7 +2320,14 @@ final class ChangesReducerTests: XCTestCase {
             changesReducer: &changesReducer,
             produces: { changeset in
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsRemoved,
+                    [
+                        2,
+                        3,
+                    ]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
                     [
                         2,
                         3,
@@ -2755,7 +2936,7 @@ final class ChangesReducerTests: XCTestCase {
                     ]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsInserted,
                     [
                         12,
                         13,
@@ -2774,6 +2955,8 @@ final class ChangesReducerTests: XCTestCase {
                         9,
                         10,
                         11,
+                        12,
+                        13,
                     ]
                 )
             })
@@ -2799,7 +2982,7 @@ final class ChangesReducerTests: XCTestCase {
                     ]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsInserted,
                     [
                         11,
                         12,
@@ -2817,6 +3000,8 @@ final class ChangesReducerTests: XCTestCase {
                         8,
                         9,
                         10,
+                        11,
+                        12,
                         13,
                         14,
                     ]
@@ -4592,10 +4777,11 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.groupsRemoved,
                     [
                         0,
+                        1,
                     ]
                 )
                 XCTAssertEqual(
-                    changeset.groupsUpdated,
+                    changeset.groupsInserted,
                     [
                         1,
                     ]
@@ -4617,18 +4803,14 @@ final class ChangesReducerTests: XCTestCase {
                     changeset.groupsRemoved,
                     [
                         0,
+                        1,
                     ]
                 )
                 XCTAssertEqual(
                     changeset.groupsInserted,
                     [
-                        2,
-                    ]
-                )
-                XCTAssertEqual(
-                    changeset.groupsUpdated,
-                    [
                         1,
+                        2,
                     ]
                 )
             })
