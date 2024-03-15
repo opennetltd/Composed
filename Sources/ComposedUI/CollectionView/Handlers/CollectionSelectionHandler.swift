@@ -24,6 +24,6 @@ public extension CollectionSelectionHandler {
     }
     
     func didDeselect(at index: Int, cell: UICollectionViewCell) {
-        didSelect(at: index)
+        didDeselect(at: index)
     }
 }
