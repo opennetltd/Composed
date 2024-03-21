@@ -567,9 +567,7 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         let elementsProvider = self.elementsProvider(for: sectionIndex)
         let section = self.mapper.provider.sections[sectionIndex]
 
-        // Without performing these changes inside a batch updates the header
-        // may briefly be hidden, causing a "flash" to occur.
-        collectionView.performBatchUpdates {
+        func reloadHeader() {
             let context = UICollectionViewFlowLayoutInvalidationContext()
             context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: [IndexPath(item: 0, section: sectionIndex)])
             invalidateLayout(with: context)
@@ -580,6 +578,22 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
                 header.kind.rawValue == UICollectionView.elementKindSectionHeader
             {
                 header.configure(headerView, sectionIndex, section)
+            }
+        }
+
+        // The header reload should always be inside a `performBatchUpdates` to prevent a "flash"
+        // from occurring when refreshing, but if the update is inside a nested
+        // `performBatchUpdates` it can cause some of the indexes to be incorrect. This could be a
+        // bug within the caller, but I think it's more likely that calling `performBatchUpdates`
+        // can trigger a layout update, but being mid-update means the indexes are not yet all in
+        // sync with what the collection view knows.
+        if isPerformingUpdates {
+            reloadHeader()
+        } else {
+            isPerformingUpdates = true
+            collectionView.performBatchUpdates {
+                reloadHeader()
+                isPerformingUpdates = false
             }
         }
     }
@@ -593,9 +607,7 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
 
         debugLog("Section \(sectionIndex) invalidated footer")
 
-        // Without performing these changes inside a batch updates the footer
-        // may briefly be hidden, causing a "flash" to occur.
-        collectionView.performBatchUpdates {
+        func reloadFooter() {
             let context = UICollectionViewFlowLayoutInvalidationContext()
             context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionFooter, at: [IndexPath(item: 0, section: sectionIndex)])
             invalidateLayout(with: context)
@@ -609,6 +621,22 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
                 footer.kind.rawValue == UICollectionView.elementKindSectionFooter
             {
                 footer.configure(footerView, sectionIndex, section)
+            }
+        }
+
+        // The footer reload should always be inside a `performBatchUpdates` to prevent a "flash"
+        // from occurring when refreshing, but if the update is inside a nested
+        // `performBatchUpdates` it can cause some of the indexes to be incorrect. This could be a
+        // bug within the caller, but I think it's more likely that calling `performBatchUpdates`
+        // can trigger a layout update, but being mid-update means the indexes are not yet all in
+        // sync with what the collection view knows.
+        if isPerformingUpdates {
+            reloadFooter()
+        } else {
+            isPerformingUpdates = true
+            collectionView.performBatchUpdates {
+                reloadFooter()
+                isPerformingUpdates = false
             }
         }
     }
