@@ -365,6 +365,12 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         debugLog("Layout out collection view, if needed")
         collectionView.layoutIfNeeded()
         debugLog("Collection view has been laid out")
+
+        /// The index paths of the items that need to be updated. Due to a bug in UICollectionView
+        /// these updates are performed in a second performBatchUpdates immediately after the first
+        /// batch updates.
+        var elementsUpdated: Set<IndexPath>?
+
         collectionView.performBatchUpdates({
             debugLog("Starting batch updates")
             changesReducer.beginUpdating()
@@ -384,14 +390,10 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
             debugLog("Deleting items \(changeset.elementsRemoved.sorted(by: >))")
             collectionView.deleteItems(at: Array(changeset.elementsRemoved))
 
-            debugLog("Reloaded sections \(changeset.groupsUpdated.sorted(by: >))")
-            collectionView.reloadSections(IndexSet(changeset.groupsUpdated))
-
             debugLog("Inserting items \(changeset.elementsInserted.sorted(by: <))")
             collectionView.insertItems(at: Array(changeset.elementsInserted))
 
-            debugLog("Reloading items \(changeset.elementsUpdated.sorted(by: <))")
-            collectionView.reloadItems(at: Array(changeset.elementsUpdated))
+            elementsUpdated = changeset.elementsUpdated
 
             changeset.elementsMoved.forEach { move in
                 debugLog("Moving \(move.from) to \(move.to)")
@@ -405,6 +407,18 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         }, completion: { [weak self] isFinished in
             self?.debugLog("Batch updates completed. isFinished: \(isFinished)")
         })
+
+        if let elementsUpdated, !elementsUpdated.isEmpty {
+            debugLog("Need to perform a second `performBatchUpdates` to apply reloads")
+            collectionView.performBatchUpdates({
+                debugLog("Reloading items \(elementsUpdated.sorted(by: <))")
+                collectionView.reloadItems(at: Array(elementsUpdated))
+
+                debugLog("Item reload updates have been applied")
+            }, completion: { [weak self] isFinished in
+                self?.debugLog("Item reload batch updates completed. isFinished: \(isFinished)")
+            })
+        }
         isPerformingUpdates = false
         debugLog("`performBatchUpdates` call has completed")
     }
