@@ -13,16 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Fetch tag
-        run: git fetch --depth=1 origin +${{ github.ref }}:${{ github.ref }}
-
-      - name: Get release description
-        run: |
-          $(git tag -ln --format=$'%(contents:subject)\n\n%(contents:body)' ${{ steps.release_version.outputs.version }}) > "RELEASE_BODY.txt"
+      - uses: actions/checkout@v4
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          body_path: "RELEASE_BODY.txt"
+        uses: softprops/action-gh-release@v2
