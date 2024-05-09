@@ -1060,7 +1060,7 @@ extension MainActor {
     @_unavailableFromAsync
     @available(iOS, obsoleted: 17.0, message: "Use `assumeIsolated`")
     @available(swift, obsoleted: 5.10, renamed: "assumeIsolated")
-    public static func unsafeAssumeIsolated<T>(_ operation: @MainActor () throws -> T) rethrows -> T {
+    fileprivate static func unsafeAssumeIsolated<T>(_ operation: @MainActor () throws -> T) rethrows -> T {
         // This is the code from the standard library but without the executor check because there's
         // no public API to access it.
         // https://github.com/apple/swift/blob/cf736295122e267db63c980ab4bff39e9022ce1e/stdlib/public/Concurrency/MainActor.swift#L119
