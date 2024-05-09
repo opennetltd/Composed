@@ -28,7 +28,7 @@ let package = Package(
         .target(
             name: "Composed",
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"]),
+                .enableExperimentalFeature("StrictConcurrency"),
             ]
         ),
         .testTarget(
@@ -39,7 +39,7 @@ let package = Package(
             name: "ComposedUI",
             dependencies: ["Composed"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"]),
+                .enableExperimentalFeature("StrictConcurrency"),
             ]
         ),
         .testTarget(
@@ -50,7 +50,7 @@ let package = Package(
             name: "ComposedLayouts",
             dependencies: ["Composed", "ComposedUI"],
             swiftSettings: [
-                .unsafeFlags(["-Xfrontend", "-strict-concurrency=complete"]),
+                .enableExperimentalFeature("StrictConcurrency"),
             ]
         ),
     ]
