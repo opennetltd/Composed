@@ -80,7 +80,6 @@ func testInsertThenRemoveGroups() {
             XCTAssertTrue(changeset.elementsInserted.isEmpty)
             XCTAssertTrue(changeset.elementsUpdated.isEmpty)
             XCTAssertTrue(changeset.groupsRemoved.isEmpty)
-            XCTAssertTrue(changeset.groupsUpdated.isEmpty)
             XCTAssertEqual(
                 changeset.groupsInserted,
                 [
@@ -106,7 +105,6 @@ func testInsertThenRemoveGroups() {
             XCTAssertTrue(changeset.elementsUpdated.isEmpty)
             XCTAssertTrue(changeset.groupsInserted.isEmpty)
             XCTAssertTrue(changeset.groupsRemoved.isEmpty)
-            XCTAssertTrue(changeset.groupsUpdated.isEmpty)
         })
 }
 ```
