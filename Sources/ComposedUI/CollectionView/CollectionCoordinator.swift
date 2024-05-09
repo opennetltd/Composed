@@ -120,35 +120,67 @@ open class CollectionCoordinator: NSObject {
         prepareSections()
 
         delegateObserver = collectionView.observe(\.delegate, options: [.initial, .new]) { [weak self] collectionView, _ in
+            #if swift(>=5.10)
+            MainActor.assumeIsolated {
+                guard let self, collectionView.delegate !== self else { return }
+                self.originalDelegate = collectionView.delegate
+                collectionView.delegate = self
+            }
+            #else
             MainActor.unsafeAssumeIsolated {
                 guard let self, collectionView.delegate !== self else { return }
                 self.originalDelegate = collectionView.delegate
                 collectionView.delegate = self
             }
+            #endif
         }
 
         dataSourceObserver = collectionView.observe(\.dataSource, options: [.initial, .new]) { [weak self] collectionView, _ in
+            #if swift(>=5.10)
+            MainActor.assumeIsolated {
+                guard let self, collectionView.dataSource !== self else { return }
+                self.originalDataSource = collectionView.dataSource
+                collectionView.dataSource = self
+            }
+            #else
             MainActor.unsafeAssumeIsolated {
                 guard let self, collectionView.dataSource !== self else { return }
                 self.originalDataSource = collectionView.dataSource
                 collectionView.dataSource = self
             }
+            #endif
         }
 
         dragDelegateObserver = collectionView.observe(\.dragDelegate, options: [.initial, .new]) { [weak self] collectionView, _ in
+            #if swift(>=5.10)
+            MainActor.assumeIsolated {
+                guard let self, collectionView.dragDelegate !== self else { return }
+                self.originalDragDelegate = collectionView.dragDelegate
+                collectionView.dragDelegate = self
+            }
+            #else
             MainActor.unsafeAssumeIsolated {
                 guard let self, collectionView.dragDelegate !== self else { return }
                 self.originalDragDelegate = collectionView.dragDelegate
                 collectionView.dragDelegate = self
             }
+            #endif
         }
 
         dropDelegateObserver = collectionView.observe(\.dropDelegate, options: [.initial, .new]) { [weak self] collectionView, _ in
+            #if swift(>=5.10)
+            MainActor.assumeIsolated {
+                guard let self, collectionView.dropDelegate !== self else { return }
+                self.originalDropDelegate = collectionView.dropDelegate
+                collectionView.dropDelegate = self
+            }
+            #else
             MainActor.unsafeAssumeIsolated {
                 guard let self, collectionView.dropDelegate !== self else { return }
                 self.originalDropDelegate = collectionView.dropDelegate
                 collectionView.dropDelegate = self
             }
+            #endif
         }
 
         collectionView.register(PlaceholderSupplementaryView.self,
