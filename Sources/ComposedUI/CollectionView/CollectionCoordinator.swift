@@ -141,9 +141,16 @@ open class CollectionCoordinator: NSObject {
             collectionView.dropDelegate = self
         }
 
-        collectionView.register(PlaceholderSupplementaryView.self,
-                                forSupplementaryViewOfKind: PlaceholderSupplementaryView.kind,
-                                withReuseIdentifier: PlaceholderSupplementaryView.reuseIdentifier)
+        collectionView.register(
+            PlaceholderSupplementaryView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: PlaceholderSupplementaryView.reuseIdentifier
+        )
+        collectionView.register(
+            PlaceholderSupplementaryView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
+            withReuseIdentifier: PlaceholderSupplementaryView.reuseIdentifier
+        )
     }
 
     /// Replaces the current sectionProvider with the specified provider
@@ -295,6 +302,28 @@ open class CollectionCoordinator: NSObject {
 
         if let logger = logger {
             logger(message)
+        }
+    }
+
+    fileprivate func dumpState() {
+        let numberOfSections = collectionView.numberOfSections
+        for section in 0 ..< numberOfSections {
+            let numberOfItems = collectionView.numberOfItems(inSection: section)
+            debugLog("Section \(section) has \(numberOfItems) item(s)")
+
+            let headerAttributes = (collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: section))
+            if let headerAttributes {
+                debugLog("Section \(section) has header attributes: \(headerAttributes.size)")
+            } else {
+                debugLog("Section \(section) does not have header attributes")
+            }
+
+            let footerAttributes = (collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, at: IndexPath(item: 0, section: section))
+            if let footerAttributes {
+                debugLog("Section \(section) has footer attributes: \(footerAttributes.size)")
+            } else {
+                debugLog("Section \(section) does not have footer attributes")
+            }
         }
     }
 }
@@ -733,9 +762,15 @@ extension CollectionCoordinator: UICollectionViewDataSource {
             return view
         } else {
             guard let view = originalDataSource?.collectionView?(collectionView, viewForSupplementaryElementOfKind: kind, at: indexPath) else {
-                // when in production its better to return 'something' to prevent crashing
-                assertionFailure("Unsupported supplementary kind: \(kind) at indexPath: \(indexPath). Check if your layout it returning attributes for the supplementary element at \(indexPath)")
-                return collectionView.dequeue(supplementary: PlaceholderSupplementaryView.self, ofKind: PlaceholderSupplementaryView.kind, for: indexPath)
+                // As of iOS 17, when compiled with the iOS 17 SDK, we have seen UIKit request a
+                // supplementary view (e.g. a header) for an index path that should not have a
+                // header. This seems to happen when a prior section is deleted. In this case the
+                // layout returns header attributes with a size of zero, which should tell UIKit not
+                // to request a cell. Returning a placeholder view here is a fallback to prevent a
+                // crash, but we still need to find why this occurs because some refreshes do not
+                // get applied to the layout and wrong header height is used.
+                assertionFailure("UIKit requested a supplementary element of kind \(kind) at \(indexPath), but the elements provider \(elements) nor the original data source provided a header or footer. This may cause visual bugs and/or crashes.")
+                return collectionView.dequeue(supplementary: PlaceholderSupplementaryView.self, ofKind: kind, for: indexPath)
             }
 
             return view
