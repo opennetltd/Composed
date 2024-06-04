@@ -595,18 +595,21 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
 
         let elementsProvider = self.elementsProvider(for: sectionIndex)
         let section = self.mapper.provider.sections[sectionIndex]
+        let beforeIndex = changesReducer.groupIndexBeforeChanges(currentGroup: sectionIndex)
+
 
         func reloadHeader() {
-            let context = UICollectionViewFlowLayoutInvalidationContext()
-            context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: [IndexPath(item: 0, section: sectionIndex)])
-            invalidateLayout(with: context)
-
             if
-                let headerView = collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex)),
+                let headerView = collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: beforeIndex)),
                 let header = elementsProvider.header,
                 header.kind.rawValue == UICollectionView.elementKindSectionHeader
             {
                 header.configure(headerView, sectionIndex, section)
+            } else {
+                print("zxc didn't get header for section")
+                let context = UICollectionViewFlowLayoutInvalidationContext()
+                context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: [IndexPath(item: 0, section: sectionIndex)])
+                invalidateLayout(with: context)
             }
         }
 

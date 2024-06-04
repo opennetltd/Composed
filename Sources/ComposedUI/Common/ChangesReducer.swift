@@ -75,6 +75,10 @@ internal struct ChangesReducer: CustomReflectable {
         return changeset
     }
 
+    internal func groupIndexBeforeChanges(currentGroup: Int) -> Int {
+        transformSection(currentGroup)
+    }
+
     internal mutating func insertGroups(_ groups: IndexSet) {
         groups.forEach { insertedGroup in
             let insertedGroup = insertedGroup
@@ -321,6 +325,9 @@ internal struct ChangesReducer: CustomReflectable {
     private func transformSection(_ section: Int) -> Int {
         let groupsRemoved = changeset.groupsRemoved
         let groupsInserted = changeset.groupsInserted
+
+        guard !groupsRemoved.isEmpty && !groupsInserted.isEmpty else { return section }
+
         let availableSpaces = (0..<Int.max)
             .lazy
             .filter { !groupsRemoved.contains($0) }
