@@ -8,9 +8,13 @@ public extension UICollectionViewCompositionalLayout {
     /// - Parameter coordinator: The coordinator that will use this layout to provide layout data for its sections
     convenience init(coordinator: CollectionCoordinator) {
         self.init { [weak coordinator] index, environment in
-            guard coordinator?.sectionProvider.sections.indices.contains(index) == true,
-            let section = coordinator?.sectionProvider.sections[index] as? CompositionalLayoutHandler else { return nil }
-            return section.compositionalLayoutSection(environment: environment)
+            guard let coordinator, coordinator.sectionProvider.sections.indices.contains(index) else { return nil }
+            let section = coordinator.sectionProvider.sections[index]
+            guard let layoutHandler = section as? CompositionalLayoutHandler else {
+                assert(section.isEmpty, "Section \(section) MUST conform to `CompositionalLayoutHandler` when used with a compositional layout and not empty")
+                return nil
+            }
+            return layoutHandler.compositionalLayoutSection(environment: environment)
         }
     }
 
