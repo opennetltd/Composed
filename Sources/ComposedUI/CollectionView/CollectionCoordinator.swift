@@ -295,8 +295,10 @@ open class CollectionCoordinator: NSObject {
         delegate?.coordinatorDidUpdate(self)
     }
 
-    fileprivate func debugLog(_ message: String) {
-        if #available(iOS 12, *), enableLogs {
+    fileprivate func debugLog(_ message: @autoclosure () -> String) {
+        lazy var message = message()
+
+        if enableLogs {
             os_log("%@", log: OSLog(subsystem: "ComposedUI", category: "CollectionCoordinator"), type: .debug, message)
         }
 
