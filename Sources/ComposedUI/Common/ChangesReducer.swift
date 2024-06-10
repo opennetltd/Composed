@@ -326,7 +326,7 @@ internal struct ChangesReducer: CustomReflectable {
         let groupsRemoved = changeset.groupsRemoved
         let groupsInserted = changeset.groupsInserted
 
-        guard !groupsRemoved.isEmpty && !groupsInserted.isEmpty else { return section }
+        guard !groupsRemoved.isEmpty || !groupsInserted.isEmpty else { return section }
 
         let availableSpaces = (0..<Int.max)
             .lazy
