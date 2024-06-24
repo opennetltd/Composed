@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /**
  A value that collects and reduces a multiple changes to allow them
@@ -113,6 +114,16 @@ internal struct ChangesReducer: CustomReflectable {
                 return updatedIndexPath
             })
 
+            changeset.supplementaryViewUpdates = Set(changeset.supplementaryViewUpdates.map { updatedSupplementaryView in
+                var updatedSupplementaryView = updatedSupplementaryView
+
+                if updatedSupplementaryView.indexPath.section >= insertedGroup {
+                    updatedSupplementaryView.indexPath.section += 1
+                }
+
+                return updatedSupplementaryView
+            })
+
             changeset.elementsMoved = Set(changeset.elementsMoved.map { move in
                 var move = move
 
@@ -145,6 +156,18 @@ internal struct ChangesReducer: CustomReflectable {
                 }
 
                 return updatedIndexPath
+            })
+
+            changeset.supplementaryViewUpdates = Set(changeset.supplementaryViewUpdates.compactMap { updatedSupplementaryView in
+                guard updatedSupplementaryView.indexPath.section != removedGroup else { return nil }
+
+                var updatedSupplementaryView = updatedSupplementaryView
+
+                if updatedSupplementaryView.indexPath.section > removedGroup {
+                    updatedSupplementaryView.indexPath.section -= 1
+                }
+
+                return updatedSupplementaryView
             })
 
             if changeset.groupsInserted.remove(removedGroup) != nil {
@@ -306,6 +329,10 @@ internal struct ChangesReducer: CustomReflectable {
 
     internal mutating func moveElements(_ moves: [(from: IndexPath, to: IndexPath)]) {
         moveElements(moves.map { Changeset.Move(from: $0.from, to: $0.to) })
+    }
+
+    internal mutating func reloadHeader(_ indexPath: IndexPath) {
+        changeset.supplementaryViewUpdates.insert(Changeset.SupplementaryViewUpdate(indexPath: indexPath, kind: UICollectionView.elementKindSectionHeader))
     }
 
     private func transformIndexPath(_ indexPath: IndexPath) -> IndexPath {
