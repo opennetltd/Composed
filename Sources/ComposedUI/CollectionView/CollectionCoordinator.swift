@@ -807,6 +807,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
 
         if let header = elements.header, header.kind.rawValue == kind {
             let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: header.reuseIdentifier, for: indexPath)
+            debugLog("Using \(view) for \(kind) supplementary view at \(indexPath). Configured for section \(section)")
             header.configure(view, indexPath.section, section)
             return view
         } else if let footer = elements.footer, footer.kind.rawValue == kind {
