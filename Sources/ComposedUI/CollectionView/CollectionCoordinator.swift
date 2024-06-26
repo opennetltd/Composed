@@ -672,8 +672,8 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         if isPerformingUpdates {
             changesReducer.reloadHeader(IndexPath(item: 0, section: sectionIndex))
         } else {
-            // Ensure elements provider is available, views have been registered, etc.
             collectionView.performBatchUpdates {
+                // Ensure elements provider is available, views have been registered, etc.
                 prepareSections()
                 reloadSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex))
             }
