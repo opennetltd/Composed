@@ -843,7 +843,11 @@ extension CollectionCoordinator: UICollectionViewDelegate {
             return originalDelegate?.collectionView?(collectionView, shouldSelectItemAt: indexPath) ?? false
         }
 
-        return handler.shouldSelect(at: indexPath.item)
+        if let handler = handler as? CollectionSelectionHandler, let cell = collectionView.cellForItem(at: indexPath) {
+            return handler.shouldSelect(at: indexPath.item, cell: cell)
+        } else {
+            return handler.shouldSelect(at: indexPath.item)
+        }
     }
 
     open func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
