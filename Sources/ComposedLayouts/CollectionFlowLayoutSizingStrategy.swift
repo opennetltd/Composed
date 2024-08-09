@@ -39,6 +39,15 @@ open class CollectionFlowLayoutSizingStrategy {
         self.columnCount = columnCount
         self.sizingMode = sizingMode
         self.metrics = metrics
+
+        switch sizingMode {
+        case .fixed(let height):
+            assert(height >= 0, "Height should never be negative")
+        case .aspect(let ratio):
+            assert(ratio >= 0, "Ratio should always be greater than 0")
+        case .automatic:
+            break
+        }
     }
 
     public func clearCachedSizes() {
@@ -81,6 +90,7 @@ open class CollectionFlowLayoutSizingStrategy {
         case let .fixed(height):
             let size = CGSize(width: width, height: height)
             cachedSizes[index] = size
+            assert(size.width >= 0, "Cannot use a fixed height when the width is negative.")
             return size
         case .automatic(_, let prototype):
             let targetView: UIView
@@ -95,7 +105,11 @@ open class CollectionFlowLayoutSizingStrategy {
             let size = targetView.systemLayoutSizeFitting(
                 targetSize,
                 withHorizontalFittingPriority: .required,
-                verticalFittingPriority: .fittingSizeLevel)
+                verticalFittingPriority: .fittingSizeLevel
+            )
+
+            assert(size.height >= 0, "Height should never be negative")
+            assert(size.width >= 0, "Width should never be negative")
 
             cachedSizes[index] = size
             return size
