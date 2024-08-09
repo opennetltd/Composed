@@ -14,6 +14,11 @@ public struct Changeset {
         }
     }
 
+    public struct SupplementaryViewUpdate: Hashable {
+        public var indexPath: IndexPath
+        public let kind: String
+    }
+
     public var groupsInserted: Set<Int> = []
     public var groupsRemoved: Set<Int> = []
     public var elementsRemoved: Set<IndexPath> = []
@@ -26,4 +31,9 @@ public struct Changeset {
     /// cause updates to not be applied when applied in the same batch as deletions and Composed
     /// works around this by applying updates in a second batch.
     public var elementsUpdated: Set<IndexPath> = []
+
+    /// The supplementary views that have been updated. This could be a layout or a contents
+    /// update. All the index paths used here are the index paths _after_ all other updates have
+    /// been applied and should only be used once all other batch updates have been applied.
+    public var supplementaryViewUpdates: Set<SupplementaryViewUpdate> = []
 }
