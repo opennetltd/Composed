@@ -94,7 +94,7 @@ open class CollectionFlowLayoutSizingStrategy {
             return size
         case .automatic(_, let prototype):
             let targetView: UIView
-            let targetSize = CGSize(width: width, height: 0)
+            let targetSize = CGSize(width: width, height: UIView.layoutFittingCompressedSize.height)
 
             if let cell = prototype as? UICollectionViewCell {
                 targetView = cell.contentView
