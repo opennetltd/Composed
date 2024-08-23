@@ -328,6 +328,19 @@ open class CollectionCellElement: CollectionElement {
 
 /// Defines a supplementary element to be used by a `CollectionSection` to provide a configuration for a supplementary view
 public final class CollectionSupplementaryElement: CollectionElement {
+    public typealias InvalidViewHandler = (
+        _ view: UICollectionReusableView,
+        _ expectedType: UICollectionReusableView.Type,
+        _ index: Int,
+        _ section: Any
+    ) -> Void
+
+    public typealias InvalidSectionHandler<View: UICollectionReusableView> = (
+        _ section: Any,
+        _ expectedType: Any.Type,
+        _ view: UICollectionReusableView,
+        _ index: Int
+    ) -> Void
 
     public let dequeueMethod: AnyDequeueMethod
     public let configure: (UICollectionReusableView, Int, Section) -> Void
@@ -353,15 +366,26 @@ public final class CollectionSupplementaryElement: CollectionElement {
         dequeueMethod: DequeueMethod<View>,
         reuseIdentifier: String? = nil,
         kind: CollectionElementKind = .automatic,
-        configure: @escaping (_ view: View, _ sectionIndex: Int, _ section: Section) -> Void
+        configure: @escaping (_ view: View, _ sectionIndex: Int, _ section: Section) -> Void,
+        invalidViewHandler: InvalidViewHandler? = nil,
+        invalidSectionHandler: InvalidSectionHandler<View>? = nil
     ) where Section: Composed.Section {
         self.kind = kind
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod.erasedAsAnyDequeueMethod
 
         self.configure = { view, index, section in
-            // swiftlint:disable force_cast
-            configure(view as! View, index, section as! Section)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index, section)
+                return
+            }
+
+            guard let section = section as? Section else {
+                invalidSectionHandler?(section, Section.self, view, index)
+                return
+            }
+
+            configure(view, index, section)
         }
 
         willAppear = nil
@@ -380,15 +404,26 @@ public final class CollectionSupplementaryElement: CollectionElement {
         dequeueMethod: AnyDequeueMethod,
         reuseIdentifier: String? = nil,
         kind: CollectionElementKind = .automatic,
-        configure: @escaping (_ view: View, _ sectionIndex: Int, _ section: Section) -> Void
+        configure: @escaping (_ view: View, _ sectionIndex: Int, _ section: Section) -> Void,
+        invalidViewHandler: InvalidViewHandler? = nil,
+        invalidSectionHandler: InvalidSectionHandler<View>? = nil
     ) where Section: Composed.Section {
         self.kind = kind
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod
 
         self.configure = { view, index, section in
-            // swiftlint:disable force_cast
-            configure(view as! View, index, section as! Section)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index, section)
+                return
+            }
+
+            guard let section = section as? Section else {
+                invalidSectionHandler?(section, Section.self, view, index)
+                return
+            }
+
+            configure(view, index, section)
         }
 
         willAppear = nil
@@ -406,29 +441,63 @@ public final class CollectionSupplementaryElement: CollectionElement {
     ///   - didDisappear: A closure that will be called after the elements view disappears
     public init<Section, View: UICollectionReusableView>(
         section: Section,
-                         dequeueMethod: DequeueMethod<View>,
-                         reuseIdentifier: String? = nil,
-                         kind: CollectionElementKind = .automatic,
-                         configure: @escaping (View, Int, Section) -> Void,
-                         willAppear: ((View, Int, Section) -> Void)? = nil,
-                         didDisappear: ((View, Int, Section) -> Void)? = nil
+        dequeueMethod: DequeueMethod<View>,
+        reuseIdentifier: String? = nil,
+        kind: CollectionElementKind = .automatic,
+        configure: @escaping (View, Int, Section) -> Void,
+        willAppear: ((View, Int, Section) -> Void)? = nil,
+        didDisappear: ((View, Int, Section) -> Void)? = nil,
+        invalidViewHandler: InvalidViewHandler? = nil,
+        invalidSectionHandler: InvalidSectionHandler<View>? = nil
     ) where Section: Composed.Section {
         self.kind = kind
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod.erasedAsAnyDequeueMethod
 
-        // swiftlint:disable force_cast
-
         self.configure = { view, index, section in
-            configure(view as! View, index, section as! Section)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index, section)
+                return
+            }
+
+            guard let section = section as? Section else {
+                invalidSectionHandler?(section, Section.self, view, index)
+                return
+            }
+
+            configure(view, index, section)
         }
 
-        self.willAppear = { view, index, section in
-            willAppear?(view as! View, index, section as! Section)
+        self.willAppear = willAppear.flatMap { willAppear in
+            { view, index, section in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index, section)
+                    return
+                }
+
+                guard let section = section as? Section else {
+                    invalidSectionHandler?(section, Section.self, view, index)
+                    return
+                }
+
+                willAppear(view, index, section)
+            }
         }
 
-        self.didDisappear = { view, index, section in
-            didDisappear?(view as! View, index, section as! Section)
+        self.didDisappear = didDisappear.flatMap { didDisappear in
+            { view, index, section in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index, section)
+                    return
+                }
+
+                guard let section = section as? Section else {
+                    invalidSectionHandler?(section, Section.self, view, index)
+                    return
+                }
+
+                didDisappear(view, index, section)
+            }
         }
     }
 
@@ -447,25 +516,46 @@ public final class CollectionSupplementaryElement: CollectionElement {
         kind: CollectionElementKind = .automatic,
         configure: @escaping (View, Int) -> Void,
         willAppear: ((View, Int) -> Void)? = nil,
-        didDisappear: ((View, Int) -> Void)? = nil
+        didDisappear: ((View, Int) -> Void)? = nil,
+        invalidViewHandler: ((
+            _ view: UICollectionReusableView,
+            _ expectedType: UICollectionReusableView.Type,
+            _ index: Int
+        ) -> Void)? = nil
     ) {
         self.kind = kind
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod.erasedAsAnyDequeueMethod
 
-        // swiftlint:disable force_cast
-
         self.configure = { view, index, _ in
-            configure(view as! View, index)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index)
+                return
+            }
+
+            configure(view, index)
         }
 
-        self.willAppear = { view, index, _ in
-            willAppear?(view as! View, index)
+        self.willAppear = willAppear.flatMap { willAppear in
+            { view, index, _ in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index)
+                    return
+                }
+
+                willAppear(view, index)
+            }
         }
 
-        self.didDisappear = { view, index, _ in
-            didDisappear?(view as! View, index)
+        self.didDisappear = didDisappear.flatMap { didDisappear in
+            { view, index, _ in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index)
+                    return
+                }
+
+                didDisappear(view, index)
+            }
         }
     }
-
 }
