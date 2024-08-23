@@ -490,9 +490,8 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
 
         if collectionView.collectionViewLayout is UICollectionViewFlowLayout {
             // Despite us not using any properties exclusive to
-            // UICollectionViewFlowLayoutInvalidationContext if the layout if a flow layout it will
-            // crash when invalidating with a context that is not an instance or subclass of
-            // UICollectionViewFlowLayoutInvalidationContext.
+            // UICollectionViewFlowLayoutInvalidationContext a flow layout will crash when
+            // invalidating with a context that is not an instance or subclass of UICollectionViewFlowLayoutInvalidationContext.
             context = UICollectionViewFlowLayoutInvalidationContext()
         } else {
             context = UICollectionViewLayoutInvalidationContext()
