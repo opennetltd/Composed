@@ -19,7 +19,6 @@ public enum CollectionElementKind {
 
 /// Defines an element used by a `CollectionSection` to provide configurations for a cell, header and/or footer.
 public protocol CollectionElement {
-
     /// The method to use for registering and dequeueing a view for this element
     var dequeueMethod: AnyDequeueMethod { get }
 
@@ -34,7 +33,6 @@ public protocol CollectionElement {
 
     /// A closure that will be called after the elements view has disappeared
     var didDisappear: ((UICollectionReusableView, Int, Section) -> Void)? { get }
-
 }
 
 extension CollectionElement {
@@ -44,6 +42,19 @@ extension CollectionElement {
 
 /// Defines a cell element to be used by a `CollectionSection` to provide a configuration for a cell
 open class CollectionCellElement: CollectionElement {
+    public typealias InvalidViewHandler = (
+        _ view: UICollectionReusableView,
+        _ expectedType: UICollectionReusableView.Type,
+        _ index: Int,
+        _ section: Any
+    ) -> Void
+
+    public typealias InvalidSectionHandler<View: UICollectionReusableView> = (
+        _ section: Any,
+        _ expectedType: Any.Type,
+        _ view: UICollectionReusableView,
+        _ index: Int
+    ) -> Void
 
     public let dequeueMethod: AnyDequeueMethod
     public let configure: (UICollectionReusableView, Int, Section) -> Void
@@ -60,18 +71,29 @@ open class CollectionCellElement: CollectionElement {
     ///   - dequeueMethod: The method to use for registering and dequeueing a cell for this element
     ///   - reuseIdentifier: The reuseIdentifier to use for this element
     ///   - configure: A closure that will be called whenever the elements view needs to be configured
-    public init<Section, View: UICollectionViewCell>(section: Section,
-                         dequeueMethod: DequeueMethod<View>,
-                         reuseIdentifier: String? = nil,
-                         configure: @escaping (View, Int, Section) -> Void)
-    where Section: Composed.Section {
+    public init<Section, View: UICollectionViewCell>(
+        section: Section,
+        dequeueMethod: DequeueMethod<View>,
+        reuseIdentifier: String? = nil,
+        configure: @escaping (View, Int, Section) -> Void,
+        invalidViewHandler: InvalidViewHandler? = nil,
+        invalidSectionHandler: InvalidSectionHandler<View>? = nil
+    ) where Section: Composed.Section {
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod.erasedAsAnyDequeueMethod
 
-        // swiftlint:disable force_cast
-
         self.configure = { view, index, section in
-            configure(view as! View, index, section as! Section)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index, section)
+                return
+            }
+
+            guard let section = section as? Section else {
+                invalidSectionHandler?(section, Section.self, view, index)
+                return
+            }
+
+            configure(view, index, section)
         }
 
         willAppear = nil
@@ -84,18 +106,29 @@ open class CollectionCellElement: CollectionElement {
     ///   - dequeueMethod: The method to use for registering and dequeueing a cell for this element
     ///   - reuseIdentifier: The reuseIdentifier to use for this element
     ///   - configure: A closure that will be called whenever the elements view needs to be configured
-    public init<Section, View: UICollectionViewCell>(section: Section,
-                                                     dequeueMethod: AnyDequeueMethod,
-                                                     reuseIdentifier: String? = nil,
-                                                     configure: @escaping (View, Int, Section) -> Void)
-    where Section: Composed.Section {
+    public init<Section, View: UICollectionViewCell>(
+        section: Section,
+        dequeueMethod: AnyDequeueMethod,
+        reuseIdentifier: String? = nil,
+        configure: @escaping (View, Int, Section) -> Void,
+        invalidViewHandler: InvalidViewHandler? = nil,
+        invalidSectionHandler: InvalidSectionHandler<View>? = nil
+    ) where Section: Composed.Section {
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod
 
-        // swiftlint:disable force_cast
-
         self.configure = { view, index, section in
-            configure(view as! View, index, section as! Section)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index, section)
+                return
+            }
+
+            guard let section = section as? Section else {
+                invalidSectionHandler?(section, Section.self, view, index)
+                return
+            }
+
+            configure(view, index, section)
         }
 
         willAppear = nil
@@ -110,28 +143,63 @@ open class CollectionCellElement: CollectionElement {
     ///   - configure: A closure that will be called whenever the elements view needs to be configured
     ///   - willAppear: A closure that will be called before the elements view appears
     ///   - didDisappear: A closure that will be called after the elements view disappears
-    public init<Section, View: UICollectionViewCell>(section: Section,
-                         dequeueMethod: DequeueMethod<View>,
-                         reuseIdentifier: String? = nil,
-                         configure: @escaping (View, Int, Section) -> Void,
-                         willAppear: ((View, Int, Section) -> Void)? = nil,
-                         didDisappear: ((View, Int, Section) -> Void)? = nil)
-    where Section: Composed.Section {
+    public init<Section, View: UICollectionViewCell>(
+        section: Section,
+        dequeueMethod: DequeueMethod<View>,
+        reuseIdentifier: String? = nil,
+        configure: @escaping (View, Int, Section) -> Void,
+        willAppear: ((View, Int, Section) -> Void)? = nil,
+        didDisappear: ((View, Int, Section) -> Void)? = nil,
+        invalidViewHandler: InvalidViewHandler? = nil,
+        invalidSectionHandler: InvalidSectionHandler<View>? = nil
+    ) where Section: Composed.Section {
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod.erasedAsAnyDequeueMethod
 
-        // swiftlint:disable force_cast
-
         self.configure = { view, index, section in
-            configure(view as! View, index, section as! Section)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index, section)
+                return
+            }
+
+            guard let section = section as? Section else {
+                invalidSectionHandler?(section, Section.self, view, index)
+                return
+            }
+
+            configure(view, index, section)
         }
 
-        self.willAppear = { view, index, section in
-            willAppear?(view as! View, index, section as! Section)
+        self.willAppear = willAppear.flatMap { willAppear in
+            { view, index, section in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index, section)
+                    return
+                }
+
+                guard let section = section as? Section else {
+                    invalidSectionHandler?(section, Section.self, view, index)
+                    return
+                }
+
+                willAppear(view, index, section)
+            }
         }
 
-        self.didDisappear = { view, index, section in
-            didDisappear?(view as! View, index, section as! Section)
+        self.didDisappear = didDisappear.flatMap { didDisappear in
+            { view, index, section in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index, section)
+                    return
+                }
+
+                guard let section = section as? Section else {
+                    invalidSectionHandler?(section, Section.self, view, index)
+                    return
+                }
+
+                didDisappear(view, index, section)
+            }
         }
     }
 
@@ -143,28 +211,63 @@ open class CollectionCellElement: CollectionElement {
     ///   - configure: A closure that will be called whenever the elements view needs to be configured
     ///   - willAppear: A closure that will be called before the elements view appears
     ///   - didDisappear: A closure that will be called after the elements view disappears
-    public init<Section, View: UICollectionViewCell>(section: Section,
-                                                     dequeueMethod: AnyDequeueMethod,
-                                                     reuseIdentifier: String? = nil,
-                                                     configure: @escaping (View, Int, Section) -> Void,
-                                                     willAppear: ((View, Int, Section) -> Void)? = nil,
-                                                     didDisappear: ((View, Int, Section) -> Void)? = nil)
-    where Section: Composed.Section {
+    public init<Section, View: UICollectionViewCell>(
+        section: Section,
+        dequeueMethod: AnyDequeueMethod,
+        reuseIdentifier: String? = nil,
+        configure: @escaping (View, Int, Section) -> Void,
+        willAppear: ((View, Int, Section) -> Void)? = nil,
+        didDisappear: ((View, Int, Section) -> Void)? = nil,
+        invalidViewHandler: InvalidViewHandler? = nil,
+        invalidSectionHandler: InvalidSectionHandler<View>? = nil
+    ) where Section: Composed.Section {
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod
 
-        // swiftlint:disable force_cast
-
         self.configure = { view, index, section in
-            configure(view as! View, index, section as! Section)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index, section)
+                return
+            }
+
+            guard let section = section as? Section else {
+                invalidSectionHandler?(section, Section.self, view, index)
+                return
+            }
+
+            configure(view, index, section)
         }
 
-        self.willAppear = { view, index, section in
-            willAppear?(view as! View, index, section as! Section)
+        self.willAppear = willAppear.flatMap { willAppear in
+            { view, index, section in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index, section)
+                    return
+                }
+
+                guard let section = section as? Section else {
+                    invalidSectionHandler?(section, Section.self, view, index)
+                    return
+                }
+
+                willAppear(view, index, section)
+            }
         }
 
-        self.didDisappear = { view, index, section in
-            didDisappear?(view as! View, index, section as! Section)
+        self.didDisappear = didDisappear.flatMap { didDisappear in
+            { view, index, section in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index, section)
+                    return
+                }
+
+                guard let section = section as? Section else {
+                    invalidSectionHandler?(section, Section.self, view, index)
+                    return
+                }
+
+                didDisappear(view, index, section)
+            }
         }
     }
 
@@ -180,26 +283,47 @@ open class CollectionCellElement: CollectionElement {
         reuseIdentifier: String? = nil,
         configure: @escaping (View, Int) -> Void,
         willAppear: ((View, Int) -> Void)? = nil,
-        didDisappear: ((View, Int) -> Void)? = nil) {
+        didDisappear: ((View, Int) -> Void)? = nil,
+        invalidViewHandler: ((
+            _ view: UICollectionReusableView,
+            _ expectedType: UICollectionReusableView.Type,
+            _ index: Int
+        ) -> Void)? = nil
+    ) {
         self.reuseIdentifier = reuseIdentifier ?? View.reuseIdentifier
         self.dequeueMethod = dequeueMethod
 
-        // swiftlint:disable force_cast
-
         self.configure = { view, index, _ in
-            configure(view as! View, index)
+            guard let view = view as? View else {
+                invalidViewHandler?(view, View.self, index)
+                return
+            }
+
+            configure(view, index)
         }
 
-        self.willAppear = { view, index, _ in
-            willAppear?(view as! View, index)
+        self.willAppear = willAppear.flatMap { willAppear in
+            { view, index, _ in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index)
+                    return
+                }
+
+                willAppear(view, index)
+            }
         }
 
-        // TODO: Fix a memory leak that occurs here? It appears to only be caused when `FlattenedCollectionCellElement` is used.
-        self.didDisappear = { view, index, _ in
-            didDisappear?(view as! View, index)
+        self.didDisappear = didDisappear.flatMap { didDisappear in
+            { view, index, _ in
+                guard let view = view as? View else {
+                    invalidViewHandler?(view, View.self, index)
+                    return
+                }
+
+                didDisappear(view, index)
+            }
         }
     }
-
 }
 
 /// Defines a supplementary element to be used by a `CollectionSection` to provide a configuration for a supplementary view
