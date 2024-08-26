@@ -375,13 +375,13 @@ internal struct ChangesReducer: CustomReflectable {
             indexPath.section == section
         }
 
-        let itemsRemoved = changeset.elementsRemoved.filter(isIncluded(indexPath:)).map(\.item)
-        let itemsInserted = changeset.elementsInserted.filter(isIncluded(indexPath:)).map(\.item)
+        let itemsRemoved = changeset.elementsRemoved.filter(isIncluded(indexPath:))
+        let itemsInserted = changeset.elementsInserted.filter(isIncluded(indexPath:))
 
         let availableSpaces = (0..<Int.max)
             .lazy
-            .filter { !itemsRemoved.contains($0) }
-        let item = item - itemsInserted.filter({ $0 < item }).count
+            .filter { !itemsRemoved.contains(IndexPath(item: $0, section: section)) }
+        let item = item - itemsInserted.filter({ $0.item < item }).count
         let availableSpaceIndex = availableSpaces.index(availableSpaces.startIndex, offsetBy: item)
 
         return availableSpaces[availableSpaceIndex]
