@@ -30,9 +30,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
 
     public private(set) var sections: ContiguousArray<Section> = []
 
-    public var numberOfElements: Int {
-        _numberOfElements
-    }
+    public private(set) var numberOfElements: Int = 0
 
     public weak var updateDelegate: SectionUpdateDelegate?
 
@@ -48,13 +46,11 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
 
     private var children: [Child] = []
 
-    private var _numberOfElements: Int = 0
-
     public init() {}
 
     open func section(_ section: Section, didRemoveElementAt index: Int) {
         guard let sectionOffset = indexForFirstElement(of: section) else { return }
-        _numberOfElements -= 1
+        numberOfElements -= 1
         updateDelegate?.section(self, didRemoveElementAt: sectionOffset + index)
     }
 
@@ -67,13 +63,13 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
     }
 
     open func invalidateAll(_ section: Section) {
-        _numberOfElements = sections.map(\.numberOfElements).reduce(0, +)
+        numberOfElements = sections.map(\.numberOfElements).reduce(0, +)
         updateDelegate?.invalidateAll(self)
     }
 
     open func section(_ section: Section, didInsertElementAt index: Int) {
         guard let sectionOffset = indexForFirstElement(of: section) else { return }
-        _numberOfElements += 1
+        numberOfElements += 1
         updateDelegate?.section(self, didInsertElementAt: sectionOffset + index)
     }
 
@@ -136,7 +132,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
                 return sectionProvider.sections
             }
         })
-        _numberOfElements = sections.map(\.numberOfElements).reduce(0, +)
+        numberOfElements = sections.map(\.numberOfElements).reduce(0, +)
         updateDelegate?.invalidateAll(self)
     }
 
@@ -154,7 +150,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
                 self.sections.insert(section, at: sectionIndex)
                 let firstSectionIndex = self.indexForFirstElement(of: section)!
 
-                _numberOfElements += section.numberOfElements
+                numberOfElements += section.numberOfElements
 
                 (firstSectionIndex..<firstSectionIndex + section.numberOfElements).forEach { elementIndex in
                     updateDelegate?.section(self, didInsertElementAt: elementIndex)
@@ -182,7 +178,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
 
                 self.sections.remove(at: localSectionIndex)
 
-                _numberOfElements -= section.numberOfElements
+                numberOfElements -= section.numberOfElements
 
                 (sectionFirstElementIndex..<sectionFirstElementIndex + section.numberOfElements).reversed().forEach { elementIndex in
                     updateDelegate?.section(self, didRemoveElementAt: elementIndex)
@@ -205,7 +201,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
             sections.append(section)
             section.updateDelegate = self
 
-            _numberOfElements += section.numberOfElements
+            numberOfElements += section.numberOfElements
 
             (0..<section.numberOfElements)
                 .map { $0 + indexOfFirstChildElement }
@@ -228,7 +224,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
             sectionProvider.sections.forEach { section in
                 section.updateDelegate = self
 
-                _numberOfElements += section.numberOfElements
+                numberOfElements += section.numberOfElements
 
                 (0..<section.numberOfElements)
                     .map { $0 + indexOfFirstSectionElement }
@@ -269,7 +265,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
             children.insert(.section(section), at: childIndex)
             section.updateDelegate = self
 
-            _numberOfElements += section.numberOfElements
+            numberOfElements += section.numberOfElements
 
             (0..<section.numberOfElements)
                 .map { $0 + elementOffset }
@@ -296,7 +292,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
                 section.updateDelegate = nil
             }
 
-            _numberOfElements -= section.numberOfElements
+            numberOfElements -= section.numberOfElements
 
             (0..<section.numberOfElements).reversed().forEach { index in
                 updateDelegate?.section(self, didRemoveElementAt: index + sectionOffset)
@@ -315,7 +311,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
                     assertionFailure("Section \(section) has had its `delegate` changed, do not modify the delegate directly")
                 }
 
-                _numberOfElements -= section.numberOfElements
+                numberOfElements -= section.numberOfElements
 
                 let sectionOffset = indexForFirstElement(of: section)!
                 sections = sections.filter { $0 !== section }
