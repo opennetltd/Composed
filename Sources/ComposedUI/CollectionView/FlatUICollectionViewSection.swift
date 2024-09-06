@@ -15,6 +15,8 @@ open class FlatUICollectionViewSection: FlatSection, UICollectionViewSection {
         }
     }
 
+    private var cachedElementsProvider: (elementsProvider: FlatUICollectionViewSectionElementsProvider, traitCollection: UITraitCollection)?
+
     public init(header: CollectionSupplementaryElement? = nil, footer: CollectionSupplementaryElement? = nil) {
         self.header = header
         self.footer = footer
@@ -23,7 +25,16 @@ open class FlatUICollectionViewSection: FlatSection, UICollectionViewSection {
     }
 
     open func collectionViewElementsProvider(with traitCollection: UITraitCollection) -> UICollectionViewSectionElementsProvider {
-        FlatUICollectionViewSectionElementsProvider(section: self, traitCollection: traitCollection)
+        if let cachedElementsProvider, cachedElementsProvider.traitCollection == traitCollection {
+            return cachedElementsProvider.elementsProvider
+        } else {
+            let elementsProvider = FlatUICollectionViewSectionElementsProvider(
+                section: self,
+                traitCollection: traitCollection
+            )
+            cachedElementsProvider = (elementsProvider, traitCollection)
+            return elementsProvider
+        }
     }
 }
 
