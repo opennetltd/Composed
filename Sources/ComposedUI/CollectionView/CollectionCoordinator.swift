@@ -97,7 +97,6 @@ open class CollectionCoordinator: NSObject {
     private weak var originalDropDelegate: UICollectionViewDropDelegate?
     private var dropDelegateObserver: NSKeyValueObservation?
 
-    private var cachedElementsProviders: [UICollectionViewSectionElementsProvider] = []
     private var cellSectionMap = [UICollectionViewCell: (CollectionCellElement, Section)]()
 
     // Prevent registering the same cell multiple times; this might break reuse.
@@ -207,7 +206,6 @@ open class CollectionCoordinator: NSObject {
     private func prepareSections() {
         debugLog("Preparing sections")
 
-        cachedElementsProviders.removeAll()
         mapper.delegate = self
 
         for index in 0..<mapper.numberOfSections {
@@ -283,8 +281,6 @@ open class CollectionCoordinator: NSObject {
                     break
                 }
             }
-
-            cachedElementsProviders.append(elementsProvider)
         }
 
         collectionView.allowsMultipleSelection = true
@@ -613,7 +609,9 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
                     continue
                 }
 
-                self.cachedElementsProviders[indexPath.section].cell(for: indexPath.item).configure(cell, indexPath.item, self.mapper.provider.sections[indexPath.section])
+                elementsProvider(for: indexPath.section)
+                    .cell(for: indexPath.item)
+                    .configure(cell, indexPath.item, mapper.provider.sections[indexPath.section])
             }
 
             guard !indexPathsToReload.isEmpty else { return }
@@ -851,10 +849,10 @@ extension CollectionCoordinator: UICollectionViewDataSource {
     }
 
     private func elementsProvider(for section: Int) -> UICollectionViewSectionElementsProvider {
-        guard cachedElementsProviders.indices.contains(section) else {
-            fatalError("No UI configuration available for section \(section)")
+        guard let section = mapper.provider.sections[section] as? UICollectionViewSection else {
+            fatalError("No provider available for section: \(section), or it does not conform to UICollectionViewSection")
         }
-        return cachedElementsProviders[section]
+        return section.collectionViewElementsProvider(with: collectionView.traitCollection)
     }
 
 }
