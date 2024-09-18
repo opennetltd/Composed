@@ -31,9 +31,7 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
 
     public private(set) var sections: ContiguousArray<Section> = []
 
-    public var numberOfElements: Int {
-        sections.map(\.numberOfElements).reduce(0, +)
-    }
+    public private(set) var numberOfElements: Int = 0
 
     public weak var updateDelegate: SectionUpdateDelegate?
 
@@ -43,6 +41,7 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
 
     open func section(_ section: Section, didRemoveElementAt index: Int) {
         guard let sectionOffset = indexForFirstElement(of: section) else { return }
+        numberOfElements -= 1
         updateDelegate?.section(self, didRemoveElementAt: sectionOffset + index)
     }
 
@@ -55,11 +54,13 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
     }
 
     open func invalidateAll(_ section: Section) {
+        numberOfElements = sections.map(\.numberOfElements).reduce(0, +)
         updateDelegate?.invalidateAll(self)
     }
 
     open func section(_ section: Section, didInsertElementAt index: Int) {
         guard let sectionOffset = indexForFirstElement(of: section) else { return }
+        numberOfElements += 1
         updateDelegate?.section(self, didInsertElementAt: sectionOffset + index)
     }
 
@@ -122,6 +123,7 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
                 return sectionProvider.sections
             }
         })
+        numberOfElements = sections.map(\.numberOfElements).reduce(0, +)
         updateDelegate?.invalidateAll(self)
     }
 
@@ -138,6 +140,8 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
                 let sectionIndex = index + providerSectionIndex
                 self.sections.insert(section, at: sectionIndex)
                 let firstSectionIndex = self.indexForFirstElement(of: section)!
+
+                numberOfElements += section.numberOfElements
 
                 (firstSectionIndex..<firstSectionIndex + section.numberOfElements).forEach { elementIndex in
                     updateDelegate?.section(self, didInsertElementAt: elementIndex)
@@ -165,6 +169,8 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
 
                 self.sections.remove(at: localSectionIndex)
 
+                numberOfElements -= section.numberOfElements
+
                 (sectionFirstElementIndex..<sectionFirstElementIndex + section.numberOfElements).reversed().forEach { elementIndex in
                     updateDelegate?.section(self, didRemoveElementAt: elementIndex)
                 }
@@ -186,6 +192,8 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
             sections.append(section)
             section.updateDelegate = self
 
+            numberOfElements += section.numberOfElements
+
             (0..<section.numberOfElements)
                 .map { $0 + indexOfFirstChildElement }
                 .forEach { index in
@@ -206,6 +214,8 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
 
             sectionProvider.sections.forEach { section in
                 section.updateDelegate = self
+
+                numberOfElements += section.numberOfElements
 
                 (0..<section.numberOfElements)
                     .map { $0 + indexOfFirstSectionElement }
@@ -246,6 +256,8 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
             children.insert(.section(section), at: childIndex)
             section.updateDelegate = self
 
+            numberOfElements += section.numberOfElements
+
             (0..<section.numberOfElements)
                 .map { $0 + elementOffset }
                 .forEach { index in
@@ -271,6 +283,8 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
                 section.updateDelegate = nil
             }
 
+            numberOfElements -= section.numberOfElements
+
             (0..<section.numberOfElements).reversed().forEach { index in
                 updateDelegate?.section(self, didRemoveElementAt: index + sectionOffset)
             }
@@ -287,6 +301,8 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
                 } else {
                     assertionFailure("Section \(section) has had its `delegate` changed, do not modify the delegate directly")
                 }
+
+                numberOfElements -= section.numberOfElements
 
                 let sectionOffset = indexForFirstElement(of: section)!
                 sections = sections.filter { $0 !== section }

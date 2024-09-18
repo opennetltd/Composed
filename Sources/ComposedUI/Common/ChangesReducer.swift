@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /**
  A value that collects and reduces a multiple changes to allow them
@@ -75,6 +76,10 @@ internal struct ChangesReducer: CustomReflectable {
         return changeset
     }
 
+    internal func groupIndexBeforeChanges(currentGroup: Int) -> Int {
+        transformSection(currentGroup)
+    }
+
     internal mutating func insertGroups(_ groups: IndexSet) {
         groups.forEach { insertedGroup in
             let insertedGroup = insertedGroup
@@ -109,6 +114,16 @@ internal struct ChangesReducer: CustomReflectable {
                 return updatedIndexPath
             })
 
+            changeset.supplementaryViewUpdates = Set(changeset.supplementaryViewUpdates.map { updatedSupplementaryView in
+                var updatedSupplementaryView = updatedSupplementaryView
+
+                if updatedSupplementaryView.indexPath.section >= insertedGroup {
+                    updatedSupplementaryView.indexPath.section += 1
+                }
+
+                return updatedSupplementaryView
+            })
+
             changeset.elementsMoved = Set(changeset.elementsMoved.map { move in
                 var move = move
 
@@ -141,6 +156,18 @@ internal struct ChangesReducer: CustomReflectable {
                 }
 
                 return updatedIndexPath
+            })
+
+            changeset.supplementaryViewUpdates = Set(changeset.supplementaryViewUpdates.compactMap { updatedSupplementaryView in
+                guard updatedSupplementaryView.indexPath.section != removedGroup else { return nil }
+
+                var updatedSupplementaryView = updatedSupplementaryView
+
+                if updatedSupplementaryView.indexPath.section > removedGroup {
+                    updatedSupplementaryView.indexPath.section -= 1
+                }
+
+                return updatedSupplementaryView
             })
 
             if changeset.groupsInserted.remove(removedGroup) != nil {
@@ -304,6 +331,11 @@ internal struct ChangesReducer: CustomReflectable {
         moveElements(moves.map { Changeset.Move(from: $0.from, to: $0.to) })
     }
 
+    @MainActor
+    internal mutating func reloadHeader(_ indexPath: IndexPath) {
+        changeset.supplementaryViewUpdates.insert(Changeset.SupplementaryViewUpdate(indexPath: indexPath, kind: UICollectionView.elementKindSectionHeader))
+    }
+
     private func transformIndexPath(_ indexPath: IndexPath) -> IndexPath {
         var indexPath = indexPath
 
@@ -321,6 +353,9 @@ internal struct ChangesReducer: CustomReflectable {
     private func transformSection(_ section: Int) -> Int {
         let groupsRemoved = changeset.groupsRemoved
         let groupsInserted = changeset.groupsInserted
+
+        guard !groupsRemoved.isEmpty || !groupsInserted.isEmpty else { return section }
+
         let availableSpaces = (0..<Int.max)
             .lazy
             .filter { !groupsRemoved.contains($0) }
@@ -341,13 +376,13 @@ internal struct ChangesReducer: CustomReflectable {
             indexPath.section == section
         }
 
-        let itemsRemoved = changeset.elementsRemoved.filter(isIncluded(indexPath:)).map(\.item)
-        let itemsInserted = changeset.elementsInserted.filter(isIncluded(indexPath:)).map(\.item)
+        let itemsRemoved = changeset.elementsRemoved.filter(isIncluded(indexPath:))
+        let itemsInserted = changeset.elementsInserted.filter(isIncluded(indexPath:))
 
         let availableSpaces = (0..<Int.max)
             .lazy
-            .filter { !itemsRemoved.contains($0) }
-        let item = item - itemsInserted.filter({ $0 < item }).count
+            .filter { !itemsRemoved.contains(IndexPath(item: $0, section: section)) }
+        let item = item - itemsInserted.filter({ $0.item < item }).count
         let availableSpaceIndex = availableSpaces.index(availableSpaces.startIndex, offsetBy: item)
 
         return availableSpaces[availableSpaceIndex]

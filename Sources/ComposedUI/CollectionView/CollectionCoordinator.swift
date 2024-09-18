@@ -183,9 +183,16 @@ open class CollectionCoordinator: NSObject {
             #endif
         }
 
-        collectionView.register(PlaceholderSupplementaryView.self,
-                                forSupplementaryViewOfKind: PlaceholderSupplementaryView.kind,
-                                withReuseIdentifier: PlaceholderSupplementaryView.reuseIdentifier)
+        collectionView.register(
+            PlaceholderSupplementaryView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: PlaceholderSupplementaryView.reuseIdentifier
+        )
+        collectionView.register(
+            PlaceholderSupplementaryView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
+            withReuseIdentifier: PlaceholderSupplementaryView.reuseIdentifier
+        )
     }
 
     /// Replaces the current sectionProvider with the specified provider
@@ -330,13 +337,37 @@ open class CollectionCoordinator: NSObject {
         delegate?.coordinatorDidUpdate(self)
     }
 
-    fileprivate func debugLog(_ message: String) {
-        if #available(iOS 12, *), enableLogs {
+    fileprivate func debugLog(_ message: @autoclosure () -> String) {
+        lazy var message = message()
+
+        if enableLogs {
             os_log("%@", log: OSLog(subsystem: "ComposedUI", category: "CollectionCoordinator"), type: .debug, message)
         }
 
         if let logger = logger {
             logger(message)
+        }
+    }
+
+    fileprivate func dumpState() {
+        let numberOfSections = collectionView.numberOfSections
+        for section in 0 ..< numberOfSections {
+            let numberOfItems = collectionView.numberOfItems(inSection: section)
+            debugLog("Section \(section) has \(numberOfItems) item(s)")
+
+            let headerAttributes = (collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: section))
+            if let headerAttributes {
+                debugLog("Section \(section) has header attributes: \(headerAttributes.size)")
+            } else {
+                debugLog("Section \(section) does not have header attributes")
+            }
+
+            let footerAttributes = (collectionView.collectionViewLayout as? UICollectionViewFlowLayout)?.layoutAttributesForSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, at: IndexPath(item: 0, section: section))
+            if let footerAttributes {
+                debugLog("Section \(section) has footer attributes: \(footerAttributes.size)")
+            } else {
+                debugLog("Section \(section) does not have footer attributes")
+            }
         }
     }
 }
@@ -389,6 +420,13 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
             return
         }
 
+        if enableLogs {
+            debugLog("Starting batch updates with \(mapper.numberOfSections) sections")
+            for section in 0 ..< mapper.numberOfSections {
+                debugLog("Starting with \(elementsProvider(for: section).numberOfElements) items in \(section)")
+            }
+        }
+
         isPerformingUpdates = true
 
         /**
@@ -408,6 +446,8 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         /// these updates are performed in a second performBatchUpdates immediately after the first
         /// batch updates.
         var elementsUpdated: Set<IndexPath>?
+
+        var supplementaryViewUpdates: Set<Changeset.SupplementaryViewUpdate>?
 
         collectionView.performBatchUpdates({
             debugLog("Starting batch updates")
@@ -441,13 +481,17 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
             debugLog("Inserting sections \(changeset.groupsInserted.sorted(by: >))")
             collectionView.insertSections(IndexSet(changeset.groupsInserted))
 
+            // At this point the supplementary view have not had their indexes updates, so we need
+            // to wait until the completion block to make changes to them.
+            supplementaryViewUpdates = changeset.supplementaryViewUpdates
+
             debugLog("Batch updates have been applied")
         }, completion: { [weak self] isFinished in
             self?.debugLog("Batch updates completed. isFinished: \(isFinished)")
         })
 
         if let elementsUpdated, !elementsUpdated.isEmpty {
-            debugLog("Need to perform a second `performBatchUpdates` to apply reloads")
+            debugLog("Need to perform a another `performBatchUpdates` to apply reloads")
             collectionView.performBatchUpdates({
                 debugLog("Reloading items \(elementsUpdated.sorted(by: <))")
                 collectionView.reloadItems(at: Array(elementsUpdated))
@@ -457,8 +501,71 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
                 self?.debugLog("Item reload batch updates completed. isFinished: \(isFinished)")
             })
         }
+
+        if let supplementaryViewUpdates, !supplementaryViewUpdates.isEmpty {
+            debugLog("Need to perform a another `performBatchUpdates` to apply supplementary view updates")
+            collectionView.performBatchUpdates({
+                debugLog("Performing supplementary view updates \(supplementaryViewUpdates.sorted(by: { $0.indexPath < $1.indexPath }))")
+                for supplementaryViewUpdate in supplementaryViewUpdates {
+                    reloadSupplementaryView(
+                        ofKind: supplementaryViewUpdate.kind,
+                        at: supplementaryViewUpdate.indexPath
+                    )
+                }
+
+                debugLog("Supplementary view updates have been applied")
+            }, completion: { [weak self] isFinished in
+                self?.debugLog("Supplementary view updates completed. isFinished: \(isFinished)")
+            })
+        }
+
         isPerformingUpdates = false
         debugLog("`performBatchUpdates` call has completed")
+    }
+
+    private func reloadSupplementaryView(ofKind kind: String, at indexPath: IndexPath) {
+        let context: UICollectionViewLayoutInvalidationContext
+
+        if collectionView.collectionViewLayout is UICollectionViewFlowLayout {
+            // Despite us not using any properties exclusive to
+            // UICollectionViewFlowLayoutInvalidationContext a flow layout will crash when
+            // invalidating with a context that is not an instance or subclass of UICollectionViewFlowLayoutInvalidationContext.
+            context = UICollectionViewFlowLayoutInvalidationContext()
+        } else {
+            context = UICollectionViewLayoutInvalidationContext()
+        }
+
+        context.invalidateSupplementaryElements(
+            ofKind: UICollectionView.elementKindSectionHeader,
+            at: [indexPath]
+        )
+        invalidateLayout(with: context)
+
+        // Invalidating the layout only changes the size; if the view is visible we also need to
+        // reconfigure it.
+        guard collectionView.indexPathsForVisibleSupplementaryElements(ofKind: kind).contains(indexPath) else { return }
+
+        let elementsProvider = self.elementsProvider(for: indexPath.section)
+        let section = self.mapper.provider.sections[indexPath.section]
+
+        if kind == UICollectionView.elementKindSectionHeader {
+            guard let header = elementsProvider.header else {
+                assertionFailure("Asking to reload header at \(indexPath) but \(elementsProvider) from \(section) did not supply a header")
+                return
+            }
+
+            guard header.kind.rawValue == kind else {
+                assertionFailure("Asking to reload header at \(indexPath) but \(elementsProvider) from \(section) did supplied a header of kind \(header.kind.rawValue), not \(kind)")
+                return
+            }
+
+            guard let headerView = collectionView.supplementaryView(forElementKind: kind, at: indexPath) else {
+                assertionFailure("Collection view said that supplementary element of kind \(kind) is visible at \(indexPath) but it did not return a view")
+                return
+            }
+            debugLog("Configuring existing header view of kind \(kind) at \(indexPath): \(headerView)")
+            header.configure(headerView, indexPath.section, section)
+        }
     }
 
     public func mapping(_ mapping: SectionProviderMapping, didInsertSections sections: IndexSet) {
@@ -584,39 +691,13 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 
     public func mappingDidInvalidateHeader(at sectionIndex: Int) {
-        // Ensure elements provider is available, views have been registered, etc.
-        prepareSections()
-
-        let elementsProvider = self.elementsProvider(for: sectionIndex)
-        let section = self.mapper.provider.sections[sectionIndex]
-
-        func reloadHeader() {
-            let context = UICollectionViewFlowLayoutInvalidationContext()
-            context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionHeader, at: [IndexPath(item: 0, section: sectionIndex)])
-            invalidateLayout(with: context)
-
-            if
-                let headerView = collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex)),
-                let header = elementsProvider.header,
-                header.kind.rawValue == UICollectionView.elementKindSectionHeader
-            {
-                header.configure(headerView, sectionIndex, section)
-            }
-        }
-
-        // The header reload should always be inside a `performBatchUpdates` to prevent a "flash"
-        // from occurring when refreshing, but if the update is inside a nested
-        // `performBatchUpdates` it can cause some of the indexes to be incorrect. This could be a
-        // bug within the caller, but I think it's more likely that calling `performBatchUpdates`
-        // can trigger a layout update, but being mid-update means the indexes are not yet all in
-        // sync with what the collection view knows.
         if isPerformingUpdates {
-            reloadHeader()
+            changesReducer.reloadHeader(IndexPath(item: 0, section: sectionIndex))
         } else {
-            isPerformingUpdates = true
             collectionView.performBatchUpdates {
-                reloadHeader()
-                isPerformingUpdates = false
+                // Ensure elements provider is available, views have been registered, etc.
+                prepareSections()
+                reloadSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex))
             }
         }
     }
@@ -743,6 +824,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
 
         if let header = elements.header, header.kind.rawValue == kind {
             let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: header.reuseIdentifier, for: indexPath)
+            debugLog("Using \(view) for \(kind) supplementary view at \(indexPath). Configured for section \(section)")
             header.configure(view, indexPath.section, section)
             return view
         } else if let footer = elements.footer, footer.kind.rawValue == kind {
@@ -751,9 +833,15 @@ extension CollectionCoordinator: UICollectionViewDataSource {
             return view
         } else {
             guard let view = originalDataSource?.collectionView?(collectionView, viewForSupplementaryElementOfKind: kind, at: indexPath) else {
-                // when in production its better to return 'something' to prevent crashing
-                assertionFailure("Unsupported supplementary kind: \(kind) at indexPath: \(indexPath). Check if your layout it returning attributes for the supplementary element at \(indexPath)")
-                return collectionView.dequeue(supplementary: PlaceholderSupplementaryView.self, ofKind: PlaceholderSupplementaryView.kind, for: indexPath)
+                // As of iOS 17, when compiled with the iOS 17 SDK, we have seen UIKit request a
+                // supplementary view (e.g. a header) for an index path that should not have a
+                // header. This seems to happen when a prior section is deleted. In this case the
+                // layout returns header attributes with a size of zero, which should tell UIKit not
+                // to request a cell. Returning a placeholder view here is a fallback to prevent a
+                // crash, but we still need to find why this occurs because some refreshes do not
+                // get applied to the layout and wrong header height is used.
+                assertionFailure("UIKit requested a supplementary element of kind \(kind) at \(indexPath), but the elements provider \(elements) nor the original data source provided a header or footer. This may cause visual bugs and/or crashes.")
+                return collectionView.dequeue(supplementary: PlaceholderSupplementaryView.self, ofKind: kind, for: indexPath)
             }
 
             return view
