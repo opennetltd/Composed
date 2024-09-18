@@ -4,46 +4,43 @@ import Nimble
 
 @testable import Composed
 
-final class SectionProviderDelegate_Spec: QuickSpec {
+final class SectionProviderDelegate_Spec: AsyncSpec {
+    override static func spec() {
+        describe("SectionProviderDelegate") {
+            var global: ComposedSectionProvider!
+            var child: Section!
+            var delegate: MockDelegate!
 
-    override func spec() {
-        super.spec()
+            beforeEach { @MainActor in
+                global = ComposedSectionProvider()
+                delegate = MockDelegate()
+                global.updateDelegate = delegate
 
-        var global: ComposedSectionProvider!
-        var child: Section!
-        var delegate: MockDelegate!
+                child = ArraySection<String>()
+                global.append(child)
+            }
 
-        beforeEach {
-            global = ComposedSectionProvider()
-            delegate = MockDelegate()
-            global.updateDelegate = delegate
+            it("should call the delegate method for inserting a section") { @MainActor in
+                expect(delegate.didInsertSections).toNot(beNil())
+            }
 
-            child = ArraySection<String>()
-            global.append(child)
+            it("should be called from the global provider") { @MainActor in
+                expect(delegate.didInsertSections?.provider) === global
+            }
+
+            it("should contain only 1 new section") { @MainActor in
+                expect(delegate.didInsertSections?.sections.count).to(equal(1))
+            }
+
+            it("should be called from child") { @MainActor in
+                expect(delegate.didInsertSections?.sections[0]) === child
+            }
+
+            it("section should equal 1") { @MainActor in
+                expect(delegate.didInsertSections?.indexes) == IndexSet(integer: 0)
+            }
         }
-
-        it("should call the delegate method for inserting a section") {
-            expect(delegate.didInsertSections).toNot(beNil())
-        }
-
-        it("should be called from the global provider") {
-            expect(delegate.didInsertSections?.provider) === global
-        }
-
-        it("should contain only 1 new section") {
-            expect(delegate.didInsertSections?.sections.count).to(equal(1))
-        }
-
-        it("should be called from child") {
-            expect(delegate.didInsertSections?.sections[0]) === child
-        }
-
-        it("section should equal 1") {
-            expect(delegate.didInsertSections?.indexes) === IndexSet(integer: 0)
-        }
-
     }
-
 }
 
 final class MockDelegate: SectionProviderUpdateDelegate {

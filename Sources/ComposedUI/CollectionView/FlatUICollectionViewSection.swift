@@ -2,6 +2,7 @@ import Composed
 import UIKit
 
 /// A `Composed.FlatSection` conforming to `UICollectionViewSection`
+@MainActor
 open class FlatUICollectionViewSection: FlatSection, UICollectionViewSection {
     public var header: CollectionSupplementaryElement? {
         didSet {

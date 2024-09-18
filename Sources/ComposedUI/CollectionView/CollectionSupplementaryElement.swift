@@ -3,14 +3,14 @@ import UIKit
 
 /// Defines a supplementary element to be used by a `CollectionSection` to provide a configuration for a supplementary view
 public final class CollectionSupplementaryElement: CollectionElement {
-    public typealias InvalidViewHandler = (
+    public typealias InvalidViewHandler = @MainActor (
         _ view: UICollectionReusableView,
         _ expectedType: UICollectionReusableView.Type,
         _ index: Int,
         _ section: Any
     ) -> Void
 
-    public typealias InvalidSectionHandler<View: UICollectionReusableView> = (
+    public typealias InvalidSectionHandler<View: UICollectionReusableView> = @MainActor (
         _ section: Any,
         _ expectedType: Any.Type,
         _ view: UICollectionReusableView,
@@ -18,16 +18,16 @@ public final class CollectionSupplementaryElement: CollectionElement {
     ) -> Void
 
     public let dequeueMethod: AnyDequeueMethod
-    public let configure: (UICollectionReusableView, Int, Section) -> Void
+    public let configure: @MainActor (UICollectionReusableView, Int, Section) -> Void
     public let reuseIdentifier: String
 
     /// The `elementKind` this element represents
     public let kind: CollectionElementKind
 
     /// A closure that will be called before the elements view is appeared
-    public let willAppear: ((UICollectionReusableView, Int, Section) -> Void)?
+    public let willAppear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)?
     /// A closure that will be called after the elements view has disappeared
-    public let didDisappear: ((UICollectionReusableView, Int, Section) -> Void)?
+    public let didDisappear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)?
 
     /// Makes a new element for representing a supplementary view
     /// - Parameters:
@@ -41,7 +41,7 @@ public final class CollectionSupplementaryElement: CollectionElement {
         dequeueMethod: DequeueMethod<View>,
         reuseIdentifier: String? = nil,
         kind: CollectionElementKind = .automatic,
-        configure: @escaping (_ view: View, _ sectionIndex: Int, _ section: Section) -> Void,
+        configure: @MainActor @escaping (_ view: View, _ sectionIndex: Int, _ section: Section) -> Void,
         invalidViewHandler: InvalidViewHandler? = nil,
         invalidSectionHandler: InvalidSectionHandler<View>? = nil
     ) where Section: Composed.Section {
@@ -79,7 +79,7 @@ public final class CollectionSupplementaryElement: CollectionElement {
         dequeueMethod: AnyDequeueMethod,
         reuseIdentifier: String? = nil,
         kind: CollectionElementKind = .automatic,
-        configure: @escaping (_ view: View, _ sectionIndex: Int, _ section: Section) -> Void,
+        configure: @MainActor @escaping (_ view: View, _ sectionIndex: Int, _ section: Section) -> Void,
         invalidViewHandler: InvalidViewHandler? = nil,
         invalidSectionHandler: InvalidSectionHandler<View>? = nil
     ) where Section: Composed.Section {
@@ -119,9 +119,9 @@ public final class CollectionSupplementaryElement: CollectionElement {
         dequeueMethod: DequeueMethod<View>,
         reuseIdentifier: String? = nil,
         kind: CollectionElementKind = .automatic,
-        configure: @escaping (View, Int, Section) -> Void,
-        willAppear: ((View, Int, Section) -> Void)? = nil,
-        didDisappear: ((View, Int, Section) -> Void)? = nil,
+        configure: @MainActor @escaping (View, Int, Section) -> Void,
+        willAppear: (@MainActor (View, Int, Section) -> Void)? = nil,
+        didDisappear: (@MainActor (View, Int, Section) -> Void)? = nil,
         invalidViewHandler: InvalidViewHandler? = nil,
         invalidSectionHandler: InvalidSectionHandler<View>? = nil
     ) where Section: Composed.Section {
@@ -189,10 +189,10 @@ public final class CollectionSupplementaryElement: CollectionElement {
         dequeueMethod: DequeueMethod<View>,
         reuseIdentifier: String? = nil,
         kind: CollectionElementKind = .automatic,
-        configure: @escaping (View, Int) -> Void,
-        willAppear: ((View, Int) -> Void)? = nil,
-        didDisappear: ((View, Int) -> Void)? = nil,
-        invalidViewHandler: ((
+        configure: @MainActor @escaping (View, Int) -> Void,
+        willAppear: (@MainActor (View, Int) -> Void)? = nil,
+        didDisappear: (@MainActor (View, Int) -> Void)? = nil,
+        invalidViewHandler: (@MainActor (
             _ view: UICollectionReusableView,
             _ expectedType: UICollectionReusableView.Type,
             _ index: Int

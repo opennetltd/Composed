@@ -4,9 +4,8 @@ import Foundation
 
 @testable import Composed
 
-final class ComposedSectionProvider_Spec: QuickSpec {
-
-    override func spec() {
+final class ComposedSectionProvider_Spec: AsyncSpec {
+    override static func spec() {
         describe("ComposedSectionProvider") {
             var global: ComposedSectionProvider!
             var child1: ComposedSectionProvider!
@@ -22,7 +21,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                 var child2g: ComposedSectionProvider!
                     var child2h: ArraySection<String>!
 
-            beforeEach {
+            beforeEach { @MainActor in
                 global = ComposedSectionProvider()
 
                 child1 = ComposedSectionProvider()
@@ -54,15 +53,15 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                 global.append(child2)
             }
 
-            it("should contain 7 global sections") {
+            it("should contain 7 global sections") { @MainActor in
                 expect(global.numberOfSections) == 7
             }
 
-            it("cache should contain 2 providers") {
+            it("cache should contain 2 providers") { @MainActor in
                 expect(global.providers.count) == 2
             }
 
-            it("should return the right offsets") {
+            it("should return the right offsets") { @MainActor in
                 expect(global.sectionOffset(for: child1)) == 0
                 expect(global.sectionOffset(for: child1a)) == 0
                 expect(global.sectionOffset(for: child1b)) == 1
@@ -90,7 +89,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                 var countBefore: Int!
                 var newSection: ArraySection<String>!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionProviderUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
@@ -100,15 +99,15 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                     global.append(newSection)
                 }
 
-                it("should pass the correct indexes to the delegate") {
+                it("should pass the correct indexes to the delegate") { @MainActor in
                     expect(mockDelegate.didInsertSectionsCalls.last!.2) == IndexSet(integer: countBefore)
                 }
 
-                it("should update the sections count") {
+                it("should update the sections count") { @MainActor in
                     expect(global.numberOfSections) == 8
                 }
 
-                it("should contain the correct sections") {
+                it("should contain the correct sections") { @MainActor in
                     expect(global.sections[0]) === child1a
                     expect(global.sections[1]) === child1b
                     expect(global.sections[2]) === child2b
@@ -127,7 +126,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                 var newSection1: ArraySection<String>!
                 var newSection2: ArraySection<String>!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionProviderUpdateDelegate()
                     global.updateDelegate = mockDelegate
                     sectionProvider = ComposedSectionProvider()
@@ -141,15 +140,15 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                     global.append(sectionProvider)
                 }
 
-                it("should pass the correct indexes to the delegate") {
+                it("should pass the correct indexes to the delegate") { @MainActor in
                     expect(mockDelegate.didInsertSectionsCalls.last!.2) == IndexSet(integersIn: countBefore..<(countBefore + sectionProvider.numberOfSections))
                 }
 
-                it("should update the sections count") {
+                it("should update the sections count") { @MainActor in
                     expect(global.numberOfSections) == 9
                 }
 
-                it("should contain the correct sections") {
+                it("should contain the correct sections") { @MainActor in
                     expect(global.sections[0]) === child1a
                     expect(global.sections[1]) === child1b
                     expect(global.sections[2]) === child2b
@@ -166,7 +165,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                 var mockDelegate: MockSectionProviderUpdateDelegate!
                 var countBefore: Int!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionProviderUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
@@ -178,11 +177,11 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                     global.remove(newSection)
                 }
 
-                it("should pass the correct indexes to the delegate") {
+                it("should pass the correct indexes to the delegate") { @MainActor in
                     expect(mockDelegate.didRemoveSectionsCalls.last!.2) == IndexSet(integer: countBefore - 1)
                 }
 
-                it("should contain the correct sections") {
+                it("should contain the correct sections") { @MainActor in
                     expect(global.sections[0]) === child1a
                     expect(global.sections[1]) === child1b
                     expect(global.sections[2]) === child2b
@@ -197,7 +196,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                 var mockDelegate: MockSectionProviderUpdateDelegate!
                 var countBefore: Int!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionProviderUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
@@ -206,19 +205,19 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                     child2.remove(child2a)
                 }
 
-                it("should pass through the removed indexes to the delegate") {
+                it("should pass through the removed indexes to the delegate") { @MainActor in
                     expect(mockDelegate.didRemoveSectionsCalls.last!.2) == IndexSet([0, 1, 2])
                 }
 
-                it("should update the number of sections") {
+                it("should update the number of sections") { @MainActor in
                     expect(global.numberOfSections) == countBefore - 3
                 }
 
-                it("should pass itself to the delegate") {
+                it("should pass itself to the delegate") { @MainActor in
                     expect(mockDelegate.didRemoveSectionsCalls.last!.0) === child2
                 }
 
-                it("should contain the correct sections") {
+                it("should contain the correct sections") { @MainActor in
                     expect(global.sections[0]) === child1a
                     expect(global.sections[1]) === child1b
                     expect(global.sections[2]) === child2f
@@ -234,7 +233,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                 // Will have 10 children
                 var child3c: ComposedSectionProvider!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     child3 = SegmentedSectionProvider()
                     child3a = ComposedSectionProvider()
                     child3a_0 = ArraySection<String>()
@@ -258,7 +257,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                     var sectionCountBefore: Int!
                     var sectionCountDifference: Int!
 
-                    beforeEach {
+                    beforeEach { @MainActor in
                         mockDelegate = MockSectionProviderUpdateDelegate()
                         global.updateDelegate = mockDelegate
 
@@ -269,7 +268,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                         sectionCountDifference = child3.numberOfSections - sectionCountBefore
                     }
 
-                    it("should update the number of sections") {
+                    it("should update the number of sections") { @MainActor in
                         expect(global.numberOfSections) == countBefore + sectionCountDifference
                     }
                 }
@@ -280,7 +279,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                     var sectionCountBefore: Int!
                     var sectionCountDifference: Int!
 
-                    beforeEach {
+                    beforeEach { @MainActor in
                         mockDelegate = MockSectionProviderUpdateDelegate()
                         global.updateDelegate = mockDelegate
 
@@ -291,7 +290,7 @@ final class ComposedSectionProvider_Spec: QuickSpec {
                         sectionCountDifference = child3.numberOfSections - sectionCountBefore
                     }
 
-                    it("should update the number of sections") {
+                    it("should update the number of sections") { @MainActor in
                         expect(global.numberOfSections) == countBefore + sectionCountDifference
                     }
                 }

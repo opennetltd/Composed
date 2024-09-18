@@ -3,14 +3,14 @@ import UIKit
 
 /// Defines a cell element to be used by a `CollectionSection` to provide a configuration for a cell
 open class CollectionCellElement: CollectionElement {
-    public typealias InvalidViewHandler = (
+    public typealias InvalidViewHandler = @MainActor (
         _ view: UICollectionReusableView,
         _ expectedType: UICollectionReusableView.Type,
         _ index: Int,
         _ section: Any
     ) -> Void
 
-    public typealias InvalidSectionHandler<View: UICollectionReusableView> = (
+    public typealias InvalidSectionHandler<View: UICollectionReusableView> = @MainActor (
         _ section: Any,
         _ expectedType: Any.Type,
         _ view: UICollectionReusableView,
@@ -18,13 +18,13 @@ open class CollectionCellElement: CollectionElement {
     ) -> Void
 
     public let dequeueMethod: AnyDequeueMethod
-    public let configure: (UICollectionReusableView, Int, Section) -> Void
+    public let configure: @MainActor (UICollectionReusableView, Int, Section) -> Void
     public let reuseIdentifier: String
 
     /// The closure that will be called before the elements view appears
-    public let willAppear: ((UICollectionReusableView, Int, Section) -> Void)?
+    public let willAppear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)?
     /// The closure that will be called after the elements view disappears
-    public let didDisappear: ((UICollectionReusableView, Int, Section) -> Void)?
+    public let didDisappear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)?
 
     /// Makes a new element for representing a cell
     /// - Parameters:
@@ -108,9 +108,9 @@ open class CollectionCellElement: CollectionElement {
         section: Section,
         dequeueMethod: DequeueMethod<View>,
         reuseIdentifier: String? = nil,
-        configure: @escaping (View, Int, Section) -> Void,
-        willAppear: ((View, Int, Section) -> Void)? = nil,
-        didDisappear: ((View, Int, Section) -> Void)? = nil,
+        configure: @MainActor @escaping (View, Int, Section) -> Void,
+        willAppear: (@MainActor (View, Int, Section) -> Void)? = nil,
+        didDisappear: (@MainActor (View, Int, Section) -> Void)? = nil,
         invalidViewHandler: InvalidViewHandler? = nil,
         invalidSectionHandler: InvalidSectionHandler<View>? = nil
     ) where Section: Composed.Section {
@@ -176,9 +176,9 @@ open class CollectionCellElement: CollectionElement {
         section: Section,
         dequeueMethod: AnyDequeueMethod,
         reuseIdentifier: String? = nil,
-        configure: @escaping (View, Int, Section) -> Void,
-        willAppear: ((View, Int, Section) -> Void)? = nil,
-        didDisappear: ((View, Int, Section) -> Void)? = nil,
+        configure: @MainActor @escaping (View, Int, Section) -> Void,
+        willAppear: (@MainActor (View, Int, Section) -> Void)? = nil,
+        didDisappear: (@MainActor (View, Int, Section) -> Void)? = nil,
         invalidViewHandler: InvalidViewHandler? = nil,
         invalidSectionHandler: InvalidSectionHandler<View>? = nil
     ) where Section: Composed.Section {
@@ -242,10 +242,10 @@ open class CollectionCellElement: CollectionElement {
     public init<View: UICollectionViewCell>(
         dequeueMethod: AnyDequeueMethod,
         reuseIdentifier: String? = nil,
-        configure: @escaping (View, Int) -> Void,
-        willAppear: ((View, Int) -> Void)? = nil,
-        didDisappear: ((View, Int) -> Void)? = nil,
-        invalidViewHandler: ((
+        configure: @MainActor @escaping (View, Int) -> Void,
+        willAppear: (@MainActor (View, Int) -> Void)? = nil,
+        didDisappear: (@MainActor (View, Int) -> Void)? = nil,
+        invalidViewHandler: (@MainActor (
             _ view: UICollectionReusableView,
             _ expectedType: UICollectionReusableView.Type,
             _ index: Int

@@ -1,6 +1,7 @@
 import UIKit
 
 /// A delegate for responding to mapping updates
+@MainActor
 public protocol SectionProviderMappingDelegate: AnyObject {
 
     func mapping(_ mapping: SectionProviderMapping, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool)
