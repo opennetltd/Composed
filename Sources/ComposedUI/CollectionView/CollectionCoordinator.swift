@@ -87,7 +87,18 @@ open class CollectionCoordinator: NSObject {
 
     private let collectionView: UICollectionView
 
+    /// The original delegate of the collection view. This is used to forward any unhandled
+    /// functions.
+    ///
+    /// This property must be marked `nonisolated(unsafe)` to prevent a warning in
+    /// ``CollectionCoordinator/responds(to:)`` and ``CollectionCoordinator/forwardingTarget(for:)``
+    /// because the compiler cannot guarantee they are called on the main actor, but in practice
+    /// they always should be.
+    #if compiler(>=6)
+    private nonisolated(unsafe) weak var originalDelegate: UICollectionViewDelegate?
+    #else
     private weak var originalDelegate: UICollectionViewDelegate?
+    #endif
     private var delegateObserver: NSKeyValueObservation?
 
     private weak var originalDataSource: UICollectionViewDataSource?
