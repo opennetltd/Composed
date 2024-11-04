@@ -776,7 +776,14 @@ extension CollectionCoordinator: UICollectionViewDataSource {
 
         let elements = elementsProvider(for: indexPath.section)
         let section = mapper.provider.sections[indexPath.section]
-        elements.cell(for: indexPath.item).willAppear?(cell, indexPath.item, section)
+        let cellElement = elements.cell(for: indexPath.item)
+        cellElement.willAppear?(cell, indexPath.item, section)
+
+        if #available(iOS 18, *) {
+            // We do this here, rather than in `collectionView(_:cellForItemAt:)`, on iOS 18+ to
+            // avoid a crash. See `collectionView(_:cellForItemAt:)` for more information.
+            cellElement.configure(cell, indexPath.item, section)
+        }
     }
 
     public func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
@@ -804,7 +811,24 @@ extension CollectionCoordinator: UICollectionViewDataSource {
 
         let section = mapper.provider.sections[indexPath.section]
         cellSectionMap[cell] = (cellElement, section)
-        cellElement.configure(cell, indexPath.item, section)
+        if #unavailable(iOS 18) {
+            // On iOS 18+, in some very rare scenarios, configuring the cell here can cause a crash
+            // triggered by the collection view:
+            //
+            // > The collection view's data source returned a cell that is in the reuse queue.
+            // > Cells must be retrieved by calling -dequeueConfiguredReusableCellWithRegistration:forIndexPath:item:
+            // > or -dequeueReusableCellWithReuseIdentifier:forIndexPath:.
+            //
+            // This doesn't really make sense because we do dequeue the cell above using
+            // `dequeueReusableCell(withReuseIdentifier:for:)` and it's only happening on iOS 18
+            // with the iOS 18 SDK.
+            //
+            // I thought that maybe this was caused by cell prefetching, but disabling prefetching
+            // does not fix this. It could be argued that – due to prefetching – we should always be
+            // configuring the cell in `collectionView(_:willDisplay:forItemAt:)` on all versions of
+            // iOS.
+            cellElement.configure(cell, indexPath.item, section)
+        }
         return cell
     }
 
