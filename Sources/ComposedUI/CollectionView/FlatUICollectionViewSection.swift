@@ -53,3 +53,17 @@ extension FlatUICollectionViewSection: CollectionSelectionHandler {
         }
     }
 }
+
+extension FlatUICollectionViewSection: CollectionUpdateMethodProvider {
+    public func updateMethod(forElementAt index: Int) -> CellUpdateMethod {
+        guard let sectionMeta = self.sectionForElementIndex(index) else { return .reload }
+
+        let sectionIndex = index - sectionMeta.offset
+
+        if let section = sectionMeta.section as? CollectionUpdateMethodProvider {
+            return section.updateMethod(forElementAt: sectionIndex)
+        } else {
+            return .reload
+        }
+    }
+}
