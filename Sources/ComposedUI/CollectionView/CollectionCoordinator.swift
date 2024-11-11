@@ -505,7 +505,22 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
             debugLog("Need to perform a another `performBatchUpdates` to apply reloads")
             collectionView.performBatchUpdates({
                 debugLog("Reloading items \(elementsUpdated.sorted(by: <))")
-                collectionView.reloadItems(at: Array(elementsUpdated))
+                let (reloads, reconfigures) = elementsUpdated.reduce(into: (reloads: [IndexPath](), reconfigures: [IndexPath]())) { partialResult, indexPath in
+                    if let section = sectionProvider.sections[indexPath.section] as? CollectionUpdateMethodProvider {
+                        switch section.updateMethod(forElementAt: indexPath.item) {
+                        case .reload:
+                            partialResult.reloads.append(indexPath)
+                        case .reconfigure:
+                            partialResult.reconfigures.append(indexPath)
+                        }
+                    } else {
+                        partialResult.reloads.append(indexPath)
+                    }
+                }
+                collectionView.reloadItems(at: reloads)
+                if #available(iOS 15, *) {
+                    collectionView.reconfigureItems(at: reconfigures)
+                }
 
                 debugLog("Item reload updates have been applied")
             }, completion: { [weak self] isFinished in
@@ -640,32 +655,42 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
 
         guard !reloadDataBatchUpdates else { return }
 
-        guard isPerformingUpdates else {
+        if isPerformingUpdates {
+            changesReducer.updateElements(at: indexPaths)
+        } else {
             prepareSections()
 
             var indexPathsToReload: [IndexPath] = []
             for indexPath in indexPaths {
-                guard let section = self.sectionProvider.sections[indexPath.section] as? CollectionUpdateHandler,
-                      !section.prefersReload(forElementAt: indexPath.item),
-                      let cell = self.collectionView.cellForItem(at: indexPath) else {
+                guard
+                    let section = sectionProvider.sections[indexPath.section] as? CollectionUpdateMethodProvider
+                else {
                     indexPathsToReload.append(indexPath)
                     continue
                 }
 
-                self.cachedElementsProviders[indexPath.section].cell(for: indexPath.item).configure(cell, indexPath.item, self.mapper.provider.sections[indexPath.section])
+                switch section.updateMethod(forElementAt: indexPath.item) {
+                case .reload:
+                    indexPathsToReload.append(indexPath)
+                case .reconfigure:
+                    if #available(iOS 15, *) {
+                        print("zxc Reconfiguring via collection view")
+                        collectionView.reconfigureItems(at: [indexPath])
+                    } else if let cell = collectionView.cellForItem(at: indexPath) {
+                        print("zxc Reconfiguring", indexPath, "directly")
+                        cachedElementsProviders[indexPath.section]
+                            .cell(for: indexPath.item)
+                            .configure(cell, indexPath.item, mapper.provider.sections[indexPath.section])
+                    }
+                }
             }
 
             guard !indexPathsToReload.isEmpty else { return }
 
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            self.collectionView.reloadItems(at: indexPathsToReload)
-            CATransaction.setDisableActions(false)
-            CATransaction.commit()
-            return
-        }
+            print("zxc Reloading", indexPaths)
 
-        changesReducer.updateElements(at: indexPaths)
+            collectionView.reloadItems(at: indexPaths)
+        }
     }
 
     public func mapping(_ mapping: SectionProviderMapping, didMoveElementsAt moves: [(IndexPath, IndexPath)]) {
