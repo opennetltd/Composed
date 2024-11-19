@@ -146,8 +146,9 @@ extension ArraySection {
     /// Removes all elements from this section
     public func removeAll() {
         performBatchUpdates { updateDelegate in
+            let previousEndIndex = endIndex
             elements.removeAll()
-            for index in stride(from: endIndex - 1, to: startIndex, by: -1) {
+            for index in stride(from: previousEndIndex - 1, through: startIndex, by: -1) {
                 updateDelegate?.section(self, didRemoveElementAt: index)
             }
         }
