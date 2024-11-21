@@ -674,10 +674,8 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
                     indexPathsToReload.append(indexPath)
                 case .reconfigure:
                     if #available(iOS 15, *) {
-                        print("zxc Reconfiguring via collection view")
                         collectionView.reconfigureItems(at: [indexPath])
                     } else if let cell = collectionView.cellForItem(at: indexPath) {
-                        print("zxc Reconfiguring", indexPath, "directly")
                         cachedElementsProviders[indexPath.section]
                             .cell(for: indexPath.item)
                             .configure(cell, indexPath.item, mapper.provider.sections[indexPath.section])
@@ -686,8 +684,6 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
             }
 
             guard !indexPathsToReload.isEmpty else { return }
-
-            print("zxc Reloading", indexPaths)
 
             collectionView.reloadItems(at: indexPaths)
         }
