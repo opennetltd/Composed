@@ -7,6 +7,10 @@ public protocol SectionProvider: AnyObject {
 
     /// The delegate that will respond to updates
     var updateDelegate: SectionProviderUpdateDelegate? { get set }
+
+    func sectionOffset(for section: Section) -> Int?
+
+    func sectionOffset(for provider: SectionProvider) -> Int?
 }
 
 public extension SectionProvider {
@@ -18,6 +22,20 @@ public extension SectionProvider {
 
     var numberOfSections: Int {
         return sections.count
+    }
+
+    func sectionOffset(for section: Section) -> Int? {
+        // A quick test for if this is the last child is a small optimisation, mainly
+        // beneficial when the section has just been appended.
+        if sections.last === section {
+            return numberOfSections - 1
+        }
+
+        return sections.firstIndex(where: { $0 === section })
+    }
+
+    func sectionOffset(for provider: SectionProvider) -> Int? {
+        nil
     }
 
     /// Perform multiple updates in a single batch, ensuring a single layout pass and animation is used for all updates.
@@ -40,7 +58,6 @@ public extension SectionProvider {
             updates(nil)
         }
     }
-
 }
 
 /// Represents a collection of `SectionProvider`'s
@@ -57,7 +74,6 @@ public protocol AggregateSectionProvider: SectionProvider {
      the section provider is not in the hierachy
      */
     func sectionOffset(for provider: SectionProvider) -> Int?
-
 }
 
 /// A delegate that will respond to update events from a `SectionProvider`
@@ -101,15 +117,15 @@ public extension SectionProviderUpdateDelegate where Self: SectionProvider {
     }
 
     func invalidateAll(_ provider: SectionProvider) {
-        updateDelegate?.invalidateAll(provider)
+        updateDelegate?.invalidateAll(self)
     }
 
-    func provider(_ provider: SectionProvider, didInsertSections sections: [Section], at indexes: IndexSet) {
-        updateDelegate?.provider(provider, didInsertSections: sections, at: indexes)
-    }
-
-    func provider(_ provider: SectionProvider, didRemoveSections sections: [Section], at indexes: IndexSet) {
-        updateDelegate?.provider(provider, didRemoveSections: sections, at: indexes)
-    }
+//    func provider(_ provider: SectionProvider, didInsertSections sections: [Section], at indexes: IndexSet) {
+//        updateDelegate?.provider(provider, didInsertSections: sections, at: indexes)
+//    }
+//
+//    func provider(_ provider: SectionProvider, didRemoveSections sections: [Section], at indexes: IndexSet) {
+//        updateDelegate?.provider(provider, didRemoveSections: sections, at: indexes)
+//    }
 
 }

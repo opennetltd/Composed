@@ -4,24 +4,14 @@
 <dict>
 	<key>classNames</key>
 	<dict>
-		<key>SingleElementSectionTests</key>
+		<key>SectionProviderMappingPerformanceTests</key>
 		<dict>
-			<key>testNumberOfElementsWithNonOptionalPerformance()</key>
+			<key>testPerformanceWithManyChildAggregateSectionProviders()</key>
 			<dict>
 				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
 				<dict>
 					<key>baselineAverage</key>
-					<real>0.013427</real>
-					<key>baselineIntegrationDisplayName</key>
-					<string>Local Baseline</string>
-				</dict>
-			</dict>
-			<key>testNumberOfElementsWithOptionalPerformance()</key>
-			<dict>
-				<key>com.apple.XCTPerformanceMetric_WallClockTime</key>
-				<dict>
-					<key>baselineAverage</key>
-					<real>0.013700</real>
+					<real>2.982134</real>
 					<key>baselineIntegrationDisplayName</key>
 					<string>Local Baseline</string>
 				</dict>

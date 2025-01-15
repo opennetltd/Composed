@@ -96,48 +96,30 @@ public final class SectionProviderMapping: SectionProviderUpdateDelegate, Sectio
         return provider.numberOfSections
     }
 
-    /// The cached providers for each section, improves lookup peformance
-    private var cachedProviderSections: [HashableProvider: Int] = [:]
-
     /// Makes a new mapping for the specified provider
     /// - Parameter provider: The provider to map
     public init(provider: SectionProvider) {
         self.provider = provider
         provider.updateDelegate = self
         provider.sections.forEach { $0.updateDelegate = self }
-        rebuildSectionOffsets()
     }
 
     /// The global section offset for the specified provider, nil if none found
     /// - Parameter provider: The provider this index should represent
     /// - Returns: The section index in a global context
     public func sectionOffset(of provider: SectionProvider) -> Int? {
-        return cachedProviderSections[HashableProvider(provider)]
+        return provider.sectionOffset(for: provider)
     }
 
     /// The global section offset for the specified section, nil if none found
     /// - Parameter section: The section this index should represent
     /// - Returns: The section index in a global context
     public func sectionOffset(of section: Section) -> Int? {
-        return provider.sections.firstIndex(where: { $0 === section })
-    }
-
-    private func globalIndexes(for provider: SectionProvider, with indexes: IndexSet) -> IndexSet {
-        if provider is AggregateSectionProvider {
-            // The inserted section couldn've been due to a new section provider
-            // being inserted in to the hierachy; rebuild the offsets cache
-            rebuildSectionOffsets()
-        }
-
-        guard let offset = sectionOffset(of: provider) else {
-            assertionFailure("Cannot call \(#function) with a provider not in the hierachy")
-            return []
-        }
-
-        return IndexSet(indexes.map { $0 + offset })
+        return provider.sectionOffset(for: section)
     }
 
     public func provider(_ provider: SectionProvider, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
+        assert(provider === self.provider, "Provider should always pass itself for `provider` parameter to `SectionProviderUpdateDelegate` delegate methods.")
         if let delegate = delegate {
             delegate.mapping(self, willPerformBatchUpdates: updates, forceReloadData: forceReloadData)
         } else {
@@ -146,14 +128,14 @@ public final class SectionProviderMapping: SectionProviderUpdateDelegate, Sectio
     }
 
     public func provider(_ provider: SectionProvider, didInsertSections sections: [Section], at indexes: IndexSet) {
+        assert(provider === self.provider, "Provider should always pass itself for `provider` parameter to `SectionProviderUpdateDelegate` delegate methods.")
         sections.forEach { $0.updateDelegate = self }
-        let indexes = globalIndexes(for: provider, with: indexes)
         delegate?.mapping(self, didInsertSections: indexes)
     }
 
     public func provider(_ provider: SectionProvider, didRemoveSections sections: [Section], at indexes: IndexSet) {
+        assert(provider === self.provider, "Provider should always pass itself for `provider` parameter to `SectionProviderUpdateDelegate` delegate methods.")
         sections.forEach { $0.updateDelegate = nil }
-        let indexes = globalIndexes(for: provider, with: indexes)
         delegate?.mapping(self, didRemoveSections: indexes)
     }
 
@@ -181,6 +163,7 @@ public final class SectionProviderMapping: SectionProviderUpdateDelegate, Sectio
     }
 
     public func invalidateAll(_ provider: SectionProvider) {
+        assert(provider === self.provider, "Provider should always pass itself for `provider` parameter to `SectionProviderUpdateDelegate` delegate methods.")
         delegate?.mappingDidInvalidate(self)
     }
 
@@ -235,36 +218,6 @@ public final class SectionProviderMapping: SectionProviderUpdateDelegate, Sectio
         guard let sectionOffset = self.sectionOffset(of: section) else { return }
         delegate?.mappingDidInvalidateFooter(at: sectionOffset)
     }
-
-    // Rebuilds the cached providers to improve lookup performance.
-    // This is generally only required when a sections are either inserted or removed, so it should be fairly efficient.
-    private func rebuildSectionOffsets() {
-        var providerSections: [HashableProvider: Int] = [HashableProvider(provider): 0]
-
-        defer {
-            cachedProviderSections = providerSections
-        }
-
-        guard let aggregate = provider as? AggregateSectionProvider else { return }
-
-        func addOffsets(forChildrenOf aggregate: AggregateSectionProvider, offset: Int = 0) {
-            for child in aggregate.providers {
-                guard let aggregateSectionOffset = aggregate.sectionOffset(for: child) else {
-                    assertionFailure("AggregateSectionProvider should return a non-nil value for section offset of child \(child)")
-                    continue
-                }
-
-                providerSections[HashableProvider(child)] = offset + aggregateSectionOffset
-
-                if let aggregate = child as? AggregateSectionProvider {
-                    addOffsets(forChildrenOf: aggregate, offset: offset + aggregateSectionOffset)
-                }
-            }
-        }
-
-        addOffsets(forChildrenOf: aggregate)
-    }
-
 }
 
 /// A convenient wrapper to provide hashability and equality to a section provider for comparison and storage in a `SectionProviderMapping`
