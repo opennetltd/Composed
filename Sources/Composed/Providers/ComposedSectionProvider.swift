@@ -43,6 +43,8 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
             case .section: return nil
             case let .provider(provider):
                 return provider
+            case .aggregateSectionProvider(let provider):
+                return provider
             }
         }
     }
