@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "943BD074-95B8-45BE-9716-803DFFC33889",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "mainThreadCheckerEnabled" : false
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "ComposedPerformanceTests",
+        "name" : "ComposedPerformanceTests"
+      }
+    }
+  ],
+  "version" : 1
+}

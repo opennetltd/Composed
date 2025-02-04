@@ -10,8 +10,6 @@ public protocol SectionProvider: AnyObject {
     var updateDelegate: SectionProviderUpdateDelegate? { get set }
 
     func sectionOffset(for section: Section) -> Int?
-
-    func sectionOffset(for provider: SectionProvider) -> Int?
 }
 
 public extension SectionProvider {
@@ -34,10 +32,6 @@ public extension SectionProvider {
         return sections.firstIndex(where: { $0 === section })
     }
 
-    func sectionOffset(for provider: SectionProvider) -> Int? {
-        nil
-    }
-
     /// Perform multiple updates in a single batch, ensuring a single layout pass and animation is used for all updates.
     ///
     /// Changes will be reduced in to the minimal total changes required, based on the calls made to the `updateDelegate`. If
@@ -58,25 +52,6 @@ public extension SectionProvider {
             updates(nil)
         }
     }
-}
-
-//#warning("TODO: Merge this with `SectionProvider` to create a single protocol to improve casting performance. See https://github.com/apple/swift-ui/issues/10333")
-#warning("TODO: Merge this with `SectionProvider` to create a single protocol to improve casting performance. Maybe change to a concept of leaf vs node.")
-/// Represents a collection of `SectionProvider`'s
-@MainActor
-public protocol AggregateSectionProvider: SectionProvider {
-
-    var providers: [SectionProvider] { get }
-
-    /**
-     Calculates the section offset for the provided section provider in the
-     context of the callee
-
-     - parameter provider: The provider to calculate the section offset of
-     - returns: The section offset of the provided section provider, or `nil` if
-     the section provider is not in the hierachy
-     */
-    func sectionOffset(for provider: SectionProvider) -> Int?
 }
 
 /// A delegate that will respond to update events from a `SectionProvider`

@@ -372,7 +372,7 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
             case .sectionProvider(let childSectionProvider):
                 if childSectionProvider === sectionProvider {
                     return offset
-                } else if let aggregate = childSectionProvider as? AggregateSectionProvider, let sectionOffset = aggregate.sectionOffset(for: sectionProvider) {
+                } else if let aggregate = childSectionProvider as? ComposedSectionProvider, let sectionOffset = aggregate.sectionOffset(for: sectionProvider) {
                     return childSectionProvider.sections[0..<sectionOffset].reduce(into: offset, { $0 += $1.numberOfElements })
                 }
 
@@ -449,7 +449,7 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
             case .sectionProvider(let childSectionProvider):
                 if childSectionProvider === sectionProvider {
                     return index
-                } else if let aggregate = childSectionProvider as? AggregateSectionProvider, let offset = aggregate.sectionOffset(for: sectionProvider) {
+                } else if let aggregate = childSectionProvider as? ComposedSectionProvider, let offset = aggregate.sectionOffset(for: sectionProvider) {
                     return index + offset
                 }
 

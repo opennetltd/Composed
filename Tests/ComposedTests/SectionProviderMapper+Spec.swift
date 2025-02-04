@@ -82,7 +82,7 @@ final class SectionProviderMapping_Spec: AsyncSpec {
                         }
 
                         it("should return a section offset of 2 for the composed section provider") { @MainActor in
-                            expect(mapper.sectionOffset(of: level2EmbeddedSectionProvider)) == 2
+                            expect(mapper.sectionOffset(of: level2Section1)) == 2
                         }
 
                         it("should notify the delegate of the inserted sections") { @MainActor in

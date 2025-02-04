@@ -111,13 +111,6 @@ public final class SectionProviderMapping: SectionProviderUpdateDelegate, Sectio
         provider.sections.forEach { $0.updateDelegate = self }
     }
 
-    /// The global section offset for the specified provider, nil if none found
-    /// - Parameter provider: The provider this index should represent
-    /// - Returns: The section index in a global context
-    public func sectionOffset(of provider: SectionProvider) -> Int? {
-        return self.provider.sectionOffset(for: provider)
-    }
-
     /// The global section offset for the specified section, nil if none found
     /// - Parameter section: The section this index should represent
     /// - Returns: The section index in a global context

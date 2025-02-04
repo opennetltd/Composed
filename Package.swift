@@ -34,6 +34,9 @@ let package = Package(
         .testTarget(
             name: "ComposedTests",
             dependencies: ["Quick", "Nimble", "Composed"]),
+        .testTarget(
+            name: "ComposedPerformanceTests",
+            dependencies: ["Quick", "Nimble", "Composed"]),
 
         .target(
             name: "ComposedUI",
