@@ -4,44 +4,43 @@ import Foundation
 
 @testable import Composed
 
-final class FlatSection_Spec: QuickSpec {
-
-    override func spec() {
+final class FlatSection_Spec: AsyncSpec {
+    override static func spec() {
         describe("FlatSection") {
             var global: FlatSection!
             var child1: ComposedSectionProvider!
-                var child1a: ArraySection<String>!
-                var child1b: ArraySection<String>!
+            var child1a: ArraySection<String>!
+            var child1b: ArraySection<String>!
             var child2: ComposedSectionProvider!
-                var child2a: ComposedSectionProvider!
-                    var child2b: ArraySection<String>!
-                    var child2c: ArraySection<String>!
-                    var child2d: ArraySection<String>!
-                var child2e: ComposedSectionProvider!
-                var child2f: ArraySection<String>!
-                var child2g: ComposedSectionProvider!
-                    var child2h: ArraySection<String>!
+            var child2a: ComposedSectionProvider!
+            var child2b: ArraySection<String>!
+            var child2c: ArraySection<String>!
+            var child2d: ArraySection<String>!
+            var child2e: ComposedSectionProvider!
+            var child2f: ArraySection<String>!
+            var child2g: ComposedSectionProvider!
+            var child2h: ArraySection<String>!
             var child3: ArraySection<String>!
             var child4: ArraySection<String>!
             var child5: ComposedSectionProvider!
 
-            beforeEach {
+            beforeEach { @MainActor in
                 global = FlatSection()
 
                 child1 = ComposedSectionProvider()
-                    child1a = ArraySection<String>(["child1a index 0", "child1a index 1"])
-                    child1b = ArraySection<String>(["child1b index 0", "child1b index 1", "child1b index 2"])
+                child1a = ArraySection<String>(elements: ["child1a index 0", "child1a index 1"])
+                child1b = ArraySection<String>(elements: ["child1b index 0", "child1b index 1", "child1b index 2"])
                 child2 = ComposedSectionProvider()
-                    child2a = ComposedSectionProvider()
-                        child2b = ArraySection<String>(["child2b index 0"])
-                        child2c = ArraySection<String>()
-                        child2d = ArraySection<String>(["child2d index 0", "child2d index 1", "child2d index 2"])
-                    child2e = ComposedSectionProvider()
-                    child2f = ArraySection<String>(["child2f index 0", "child2f index 1", "child2f index 2"])
-                    child2g = ComposedSectionProvider()
-                        child2h = ArraySection<String>(["child2h index 0", "child2h index 1", "child2h index 2"])
-                child3 = ArraySection<String>(["child3 index 0", "child3 index 1", "child3 index 2"])
-                child4 = ArraySection<String>(["child4 index 0", "child4 index 1"])
+                child2a = ComposedSectionProvider()
+                child2b = ArraySection<String>(elements: ["child2b index 0"])
+                child2c = ArraySection<String>()
+                child2d = ArraySection<String>(elements: ["child2d index 0", "child2d index 1", "child2d index 2"])
+                child2e = ComposedSectionProvider()
+                child2f = ArraySection<String>(elements: ["child2f index 0", "child2f index 1", "child2f index 2"])
+                child2g = ComposedSectionProvider()
+                child2h = ArraySection<String>(elements: ["child2h index 0", "child2h index 1", "child2h index 2"])
+                child3 = ArraySection<String>(elements: ["child3 index 0", "child3 index 1", "child3 index 2"])
+                child4 = ArraySection<String>(elements: ["child4 index 0", "child4 index 1"])
                 child5 = ComposedSectionProvider()
 
                 child1.append(child1a)
@@ -63,11 +62,11 @@ final class FlatSection_Spec: QuickSpec {
                 global.append(child5)
             }
 
-            it("should contain 20 elements") {
+            it("should contain 20 elements") { @MainActor in
                 expect(global.numberOfElements) == 20
             }
 
-            it("should return the correct first element indexes") {
+            it("should return the correct first element indexes") { @MainActor in
                 expect(global.indexForFirstElement(of: child1)) == 0
                 expect(global.indexForFirstElement(of: child1a)) == 0
                 expect(global.indexForFirstElement(of: child1b)) == 2
@@ -85,7 +84,7 @@ final class FlatSection_Spec: QuickSpec {
                 expect(global.indexForFirstElement(of: child5)) == 20
             }
 
-            it("should return the correct section for element index") {
+            it("should return the correct section for element index") { @MainActor in
                 expect(global.sectionForElementIndex(0)?.section) === child1a
                 expect(global.sectionForElementIndex(1)?.section) === child1a
                 expect(global.sectionForElementIndex(2)?.section) === child1b
@@ -108,7 +107,7 @@ final class FlatSection_Spec: QuickSpec {
                 expect(global.sectionForElementIndex(19)?.section) === child4
             }
 
-            it("should return the correct child indexes") {
+            it("should return the correct child indexes") { @MainActor in
                 expect(global.childIndex(of: child1)) == 0
                 expect(global.childIndex(of: child1a)).to(beNil())
                 expect(global.childIndex(of: child1b)).to(beNil())
@@ -127,15 +126,15 @@ final class FlatSection_Spec: QuickSpec {
             }
 
             context("after child `ComposedSectionProvider` has been removed") {
-                beforeEach {
+                beforeEach { @MainActor in
                     global.remove(child2)
                 }
 
-                it("should contain 10 elements") {
+                it("should contain 10 elements") { @MainActor in
                     expect(global.numberOfElements) == 10
                 }
 
-                it("should return the correct first element indexes") {
+                it("should return the correct first element indexes") { @MainActor in
                     expect(global.indexForFirstElement(of: child1)) == 0
                     expect(global.indexForFirstElement(of: child1a)) == 0
                     expect(global.indexForFirstElement(of: child1b)) == 2
@@ -144,7 +143,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.indexForFirstElement(of: child5)) == 10
                 }
 
-                it("should return the correct section for element index") {
+                it("should return the correct section for element index") { @MainActor in
                     expect(global.sectionForElementIndex(0)?.section) === child1a
                     expect(global.sectionForElementIndex(1)?.section) === child1a
                     expect(global.sectionForElementIndex(2)?.section) === child1b
@@ -157,7 +156,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.sectionForElementIndex(9)?.section) === child4
                 }
 
-                it("should return the correct child indexes") {
+                it("should return the correct child indexes") { @MainActor in
                     expect(global.childIndex(of: child1)) == 0
                     expect(global.childIndex(of: child1a)).to(beNil())
                     expect(global.childIndex(of: child1b)).to(beNil())
@@ -168,15 +167,15 @@ final class FlatSection_Spec: QuickSpec {
             }
 
             context("after child `Section` has been removed") {
-                beforeEach {
+                beforeEach { @MainActor in
                     global.remove(child3)
                 }
 
-                it("should contain 17 elements") {
+                it("should contain 17 elements") { @MainActor in
                     expect(global.numberOfElements) == 17
                 }
 
-                it("should return the correct first element indexes") {
+                it("should return the correct first element indexes") { @MainActor in
                     expect(global.indexForFirstElement(of: child1)) == 0
                     expect(global.indexForFirstElement(of: child1a)) == 0
                     expect(global.indexForFirstElement(of: child1b)) == 2
@@ -193,7 +192,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.indexForFirstElement(of: child5)) == 17
                 }
 
-                it("should return the correct section for element index") {
+                it("should return the correct section for element index") { @MainActor in
                     expect(global.sectionForElementIndex(0)?.section) === child1a
                     expect(global.sectionForElementIndex(1)?.section) === child1a
                     expect(global.sectionForElementIndex(2)?.section) === child1b
@@ -213,7 +212,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.sectionForElementIndex(16)?.section) === child4
                 }
 
-                it("should return the correct child indexes") {
+                it("should return the correct child indexes") { @MainActor in
                     expect(global.childIndex(of: child1)) == 0
                     expect(global.childIndex(of: child1a)).to(beNil())
                     expect(global.childIndex(of: child1b)).to(beNil())
@@ -235,20 +234,20 @@ final class FlatSection_Spec: QuickSpec {
                 var mockDelegate: MockSectionUpdateDelegate!
                 var newSection: ArraySection<String>!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
-                    newSection = ArraySection(["new section index 0", "new section index 1"])
+                    newSection = ArraySection(elements: ["new section index 0", "new section index 1"])
 
                     global.insert(newSection, after: child3)
                 }
 
-                it("should contain 22 elements") {
+                it("should contain 22 elements") { @MainActor in
                     expect(global.numberOfElements) == 22
                 }
 
-                it("should return the correct first element indexes") {
+                it("should return the correct first element indexes") { @MainActor in
                     expect(global.indexForFirstElement(of: child1)) == 0
                     expect(global.indexForFirstElement(of: child1a)) == 0
                     expect(global.indexForFirstElement(of: child1b)) == 2
@@ -267,7 +266,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.indexForFirstElement(of: child5)) == 22
                 }
 
-                it("should return the correct section for element index") {
+                it("should return the correct section for element index") { @MainActor in
                     expect(global.sectionForElementIndex(0)?.section) === child1a
                     expect(global.sectionForElementIndex(1)?.section) === child1a
                     expect(global.sectionForElementIndex(2)?.section) === child1b
@@ -292,7 +291,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.sectionForElementIndex(21)?.section) === child4
                 }
 
-                it("should return the correct child indexes") {
+                it("should return the correct child indexes") { @MainActor in
                     expect(global.childIndex(of: child1)) == 0
                     expect(global.childIndex(of: child1a)).to(beNil())
                     expect(global.childIndex(of: child1b)).to(beNil())
@@ -311,7 +310,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.childIndex(of: child5)) == 5
                 }
 
-                it("should make correct delegate calls") {
+                it("should make correct delegate calls") { @MainActor in
                     expect(mockDelegate.didInsertElementCalls.count) == 2
                     expect(mockDelegate.didInsertElementCalls[0].section) === global
                     expect(mockDelegate.didInsertElementCalls[0].index) == 18
@@ -324,20 +323,20 @@ final class FlatSection_Spec: QuickSpec {
                 var mockDelegate: MockSectionUpdateDelegate!
                 var newSection: ArraySection<String>!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
-                    newSection = ArraySection(["new section index 0", "new section index 1"])
+                    newSection = ArraySection(elements: ["new section index 0", "new section index 1"])
 
                     global.insert(newSection, at: 3)
                 }
 
-                it("should contain 22 elements") {
+                it("should contain 22 elements") { @MainActor in
                     expect(global.numberOfElements) == 22
                 }
 
-                it("should return the correct first element indexes") {
+                it("should return the correct first element indexes") { @MainActor in
                     expect(global.indexForFirstElement(of: child1)) == 0
                     expect(global.indexForFirstElement(of: child1a)) == 0
                     expect(global.indexForFirstElement(of: child1b)) == 2
@@ -356,7 +355,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.indexForFirstElement(of: child5)) == 22
                 }
 
-                it("should return the correct section for element index") {
+                it("should return the correct section for element index") { @MainActor in
                     expect(global.sectionForElementIndex(0)?.section) === child1a
                     expect(global.sectionForElementIndex(1)?.section) === child1a
                     expect(global.sectionForElementIndex(2)?.section) === child1b
@@ -381,7 +380,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.sectionForElementIndex(21)?.section) === child4
                 }
 
-                it("should return the correct child indexes") {
+                it("should return the correct child indexes") { @MainActor in
                     expect(global.childIndex(of: child1)) == 0
                     expect(global.childIndex(of: child1a)).to(beNil())
                     expect(global.childIndex(of: child1b)).to(beNil())
@@ -400,7 +399,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.childIndex(of: child5)) == 5
                 }
 
-                it("should make correct delegate calls") {
+                it("should make correct delegate calls") { @MainActor in
                     expect(mockDelegate.didInsertElementCalls.count) == 2
                     expect(mockDelegate.didInsertElementCalls[0].section) === global
                     expect(mockDelegate.didInsertElementCalls[0].index) == 18
@@ -413,20 +412,20 @@ final class FlatSection_Spec: QuickSpec {
                 var mockDelegate: MockSectionUpdateDelegate!
                 var newSection: ArraySection<String>!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
-                    newSection = ArraySection(["new section index 0", "new section index 1"])
+                    newSection = ArraySection(elements: ["new section index 0", "new section index 1"])
 
                     global.insert(newSection, at: 0)
                 }
 
-                it("should contain 22 elements") {
+                it("should contain 22 elements") { @MainActor in
                     expect(global.numberOfElements) == 22
                 }
 
-                it("should return the correct first element indexes") {
+                it("should return the correct first element indexes") { @MainActor in
                     expect(global.indexForFirstElement(of: newSection)) == 0
                     expect(global.indexForFirstElement(of: child1)) == 2
                     expect(global.indexForFirstElement(of: child1a)) == 2
@@ -445,7 +444,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.indexForFirstElement(of: child5)) == 22
                 }
 
-                it("should return the correct section for element index") {
+                it("should return the correct section for element index") { @MainActor in
                     expect(global.sectionForElementIndex(0)?.section) === newSection
                     expect(global.sectionForElementIndex(1)?.section) === newSection
                     expect(global.sectionForElementIndex(2)?.section) === child1a
@@ -470,7 +469,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.sectionForElementIndex(21)?.section) === child4
                 }
 
-                it("should return the correct child indexes") {
+                it("should return the correct child indexes") { @MainActor in
                     expect(global.childIndex(of: newSection)) == 0
                     expect(global.childIndex(of: child1)) == 1
                     expect(global.childIndex(of: child1a)).to(beNil())
@@ -489,7 +488,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.childIndex(of: child5)) == 5
                 }
 
-                it("should make correct delegate calls") {
+                it("should make correct delegate calls") { @MainActor in
                     expect(mockDelegate.didInsertElementCalls.count) == 2
                     expect(mockDelegate.didInsertElementCalls[0].section) === global
                     expect(mockDelegate.didInsertElementCalls[0].index) == 0
@@ -502,20 +501,20 @@ final class FlatSection_Spec: QuickSpec {
                 var mockDelegate: MockSectionUpdateDelegate!
                 var newSection: ArraySection<String>!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
-                    newSection = ArraySection(["new section index 0", "new section index 1"])
+                    newSection = ArraySection(elements: ["new section index 0", "new section index 1"])
 
                     global.insert(newSection, at: 5)
                 }
 
-                it("should contain 22 elements") {
+                it("should contain 22 elements") { @MainActor in
                     expect(global.numberOfElements) == 22
                 }
 
-                it("should return the correct first element indexes") {
+                it("should return the correct first element indexes") { @MainActor in
                     expect(global.indexForFirstElement(of: child1)) == 0
                     expect(global.indexForFirstElement(of: child1a)) == 0
                     expect(global.indexForFirstElement(of: child1b)) == 2
@@ -534,7 +533,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.indexForFirstElement(of: newSection)) == 20
                 }
 
-                it("should return the correct section for element index") {
+                it("should return the correct section for element index") { @MainActor in
                     expect(global.sectionForElementIndex(0)?.section) === child1a
                     expect(global.sectionForElementIndex(1)?.section) === child1a
                     expect(global.sectionForElementIndex(2)?.section) === child1b
@@ -559,7 +558,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.sectionForElementIndex(21)?.section) === newSection
                 }
 
-                it("should return the correct child indexes") {
+                it("should return the correct child indexes") { @MainActor in
                     expect(global.childIndex(of: child1)) == 0
                     expect(global.childIndex(of: child1a)).to(beNil())
                     expect(global.childIndex(of: child1b)).to(beNil())
@@ -578,7 +577,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.childIndex(of: newSection)) == 5
                 }
 
-                it("should make correct delegate calls") {
+                it("should make correct delegate calls") { @MainActor in
                     expect(mockDelegate.didInsertElementCalls.count) == 2
                     expect(mockDelegate.didInsertElementCalls[0].section) === global
                     expect(mockDelegate.didInsertElementCalls[0].index) == 20
@@ -591,20 +590,20 @@ final class FlatSection_Spec: QuickSpec {
                 var mockDelegate: MockSectionUpdateDelegate!
                 var newSection: ArraySection<String>!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
-                    newSection = ArraySection(["new section index 0", "new section index 1"])
+                    newSection = ArraySection(elements: ["new section index 0", "new section index 1"])
 
                     child1.insert(newSection, at: 1)
                 }
 
-                it("should contain 22 elements") {
+                it("should contain 22 elements") { @MainActor in
                     expect(global.numberOfElements) == 22
                 }
 
-                it("should return the correct first element indexes") {
+                it("should return the correct first element indexes") { @MainActor in
                     expect(global.indexForFirstElement(of: child1)) == 0
                     expect(global.indexForFirstElement(of: child1a)) == 0
                     expect(global.indexForFirstElement(of: newSection)) == 2
@@ -623,7 +622,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.indexForFirstElement(of: child5)) == 22
                 }
 
-                it("should return the correct section for element index") {
+                it("should return the correct section for element index") { @MainActor in
                     expect(global.sectionForElementIndex(0)?.section) === child1a
                     expect(global.sectionForElementIndex(1)?.section) === child1a
                     expect(global.sectionForElementIndex(2)?.section) === newSection
@@ -648,7 +647,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.sectionForElementIndex(21)?.section) === child4
                 }
 
-                it("should return the correct child indexes") {
+                it("should return the correct child indexes") { @MainActor in
                     expect(global.childIndex(of: child1)) == 0
                     expect(global.childIndex(of: child1a)).to(beNil())
                     expect(global.childIndex(of: newSection)).to(beNil())
@@ -667,7 +666,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.childIndex(of: child5)) == 4
                 }
 
-                it("should make correct delegate calls") {
+                it("should make correct delegate calls") { @MainActor in
                     expect(mockDelegate.didInsertElementCalls.count) == 2
                     expect(mockDelegate.didInsertElementCalls[0].section) === global
                     expect(mockDelegate.didInsertElementCalls[0].index) == 2
@@ -676,14 +675,14 @@ final class FlatSection_Spec: QuickSpec {
                 }
 
                 context("elements inserted in that child should be propagated") {
-                    beforeEach {
+                    beforeEach { @MainActor in
                         mockDelegate = MockSectionUpdateDelegate()
                         global.updateDelegate = mockDelegate
 
                         newSection.append("new section index 2")
                     }
 
-                    it("should make correct delegate calls") {
+                    it("should make correct delegate calls") { @MainActor in
                         expect(mockDelegate.didInsertElementCalls.count) == 1
                         expect(mockDelegate.didInsertElementCalls[0].section) === global
                         expect(mockDelegate.didInsertElementCalls[0].index) == 4
@@ -691,14 +690,14 @@ final class FlatSection_Spec: QuickSpec {
                 }
 
                 context("elements removed from that child should be propagated") {
-                    beforeEach {
+                    beforeEach { @MainActor in
                         mockDelegate = MockSectionUpdateDelegate()
                         global.updateDelegate = mockDelegate
 
                         newSection.removeLast()
                     }
 
-                    it("should make correct delegate calls") {
+                    it("should make correct delegate calls") { @MainActor in
                         expect(mockDelegate.didRemoveElementCalls.count) == 1
                         expect(mockDelegate.didRemoveElementCalls[0].section) === global
                         expect(mockDelegate.didRemoveElementCalls[0].index) == 3
@@ -710,7 +709,7 @@ final class FlatSection_Spec: QuickSpec {
                 var mockDelegate: MockSectionUpdateDelegate!
                 var removedSection: ArraySection<String>!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     mockDelegate = MockSectionUpdateDelegate()
                     global.updateDelegate = mockDelegate
 
@@ -719,11 +718,11 @@ final class FlatSection_Spec: QuickSpec {
                     child1.remove(removedSection)
                 }
 
-                it("should contain 18 elements") {
+                it("should contain 18 elements") { @MainActor in
                     expect(global.numberOfElements) == 18
                 }
 
-                it("should return the correct first element indexes") {
+                it("should return the correct first element indexes") { @MainActor in
                     expect(global.indexForFirstElement(of: child1)) == 0
                     expect(global.indexForFirstElement(of: removedSection)).to(beNil())
                     expect(global.indexForFirstElement(of: child1b)) == 0
@@ -741,7 +740,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.indexForFirstElement(of: child5)) == 18
                 }
 
-                it("should return the correct section for element index") {
+                it("should return the correct section for element index") { @MainActor in
                     expect(global.sectionForElementIndex(0)?.section) === child1b
                     expect(global.sectionForElementIndex(1)?.section) === child1b
                     expect(global.sectionForElementIndex(2)?.section) === child1b
@@ -762,7 +761,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.sectionForElementIndex(17)?.section) === child4
                 }
 
-                it("should return the correct child indexes") {
+                it("should return the correct child indexes") { @MainActor in
                     expect(global.childIndex(of: child1)) == 0
                     expect(global.childIndex(of: removedSection)).to(beNil())
                     expect(global.childIndex(of: child1b)).to(beNil())
@@ -780,7 +779,7 @@ final class FlatSection_Spec: QuickSpec {
                     expect(global.childIndex(of: child5)) == 4
                 }
 
-                it("should make correct delegate calls") {
+                it("should make correct delegate calls") { @MainActor in
                     expect(mockDelegate.didRemoveElementCalls.count) == 2
                     expect(mockDelegate.didRemoveElementCalls[0].section) === global
                     expect(mockDelegate.didRemoveElementCalls[0].index) == 1

@@ -2,6 +2,7 @@ import XCTest
 @testable import Composed
 
 final class SingleElementSectionTests: XCTestCase {
+    @MainActor
     func testNumberOfElementsWithOptional() {
         let section = SingleElementSection<String?>(element: nil)
 
@@ -16,6 +17,7 @@ final class SingleElementSectionTests: XCTestCase {
         XCTAssertEqual(section.numberOfElements, 0)
     }
 
+    @MainActor
     func testNumberOfElementsWithOptionalPerformance() {
         let section = SingleElementSection<String?>(element: nil)
 
@@ -41,6 +43,7 @@ final class SingleElementSectionTests: XCTestCase {
         }
     }
 
+    @MainActor
     func testNumberOfElementsWithNonOptionalPerformance() {
         let section = SingleElementSection<String>(element: "")
 

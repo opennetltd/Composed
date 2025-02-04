@@ -1,6 +1,7 @@
 import UIKit
 
 /// A delegate for responding to mapping updates
+@MainActor
 public protocol SectionProviderMappingDelegate: AnyObject {
 
     func mapping(_ mapping: SectionProviderMapping, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool)
@@ -89,7 +90,13 @@ public final class SectionProviderMapping: SectionProviderUpdateDelegate, Sectio
     public weak var delegate: SectionProviderMappingDelegate?
 
     /// The root provider that contains all other providers and sections
+//    public let provider: SectionProvider
+
     public let provider: SectionProvider
+//    @available(*, deprecated, renamed: "provider")
+//    var provider: SectionProvider {
+//        provider
+//    }
 
     /// The number of sections in this mapping
     public var numberOfSections: Int {
@@ -108,7 +115,7 @@ public final class SectionProviderMapping: SectionProviderUpdateDelegate, Sectio
     /// - Parameter provider: The provider this index should represent
     /// - Returns: The section index in a global context
     public func sectionOffset(of provider: SectionProvider) -> Int? {
-        return provider.sectionOffset(for: provider)
+        return self.provider.sectionOffset(for: provider)
     }
 
     /// The global section offset for the specified section, nil if none found

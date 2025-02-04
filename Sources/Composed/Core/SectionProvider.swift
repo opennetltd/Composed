@@ -1,6 +1,7 @@
 import Foundation
 
 /// Represents a collection of `Section`'s.
+@MainActor
 public protocol SectionProvider: AnyObject {
     /// The child sections contained in this provider
     var sections: [Section] { get }
@@ -14,7 +15,6 @@ public protocol SectionProvider: AnyObject {
 }
 
 public extension SectionProvider {
-
     /// Returns true if the provider contains no sections or all of its sections are empty, false otherwise
     var isEmpty: Bool {
         return sections.isEmpty || sections.allSatisfy { $0.isEmpty }
@@ -60,7 +60,10 @@ public extension SectionProvider {
     }
 }
 
+//#warning("TODO: Merge this with `SectionProvider` to create a single protocol to improve casting performance. See https://github.com/apple/swift-ui/issues/10333")
+#warning("TODO: Merge this with `SectionProvider` to create a single protocol to improve casting performance. Maybe change to a concept of leaf vs node.")
 /// Represents a collection of `SectionProvider`'s
+@MainActor
 public protocol AggregateSectionProvider: SectionProvider {
 
     var providers: [SectionProvider] { get }
@@ -77,6 +80,7 @@ public protocol AggregateSectionProvider: SectionProvider {
 }
 
 /// A delegate that will respond to update events from a `SectionProvider`
+@MainActor
 public protocol SectionProviderUpdateDelegate: AnyObject {
     /// Notifies the delegate that the section provider will perform a series of updates.
     ///
@@ -107,7 +111,6 @@ public protocol SectionProviderUpdateDelegate: AnyObject {
 
 // Default implementations to minimise `SectionProvider` implementation requirements
 public extension SectionProviderUpdateDelegate where Self: SectionProvider {
-
     func provider(_ provider: SectionProvider, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
         if let updateDelegate = updateDelegate {
             updateDelegate.provider(self, willPerformBatchUpdates: updates, forceReloadData: forceReloadData)

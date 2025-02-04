@@ -9,33 +9,49 @@ let package = Package(
     products: [
         .library(
             name: "Composed",
-            targets: ["Composed"]),
+            targets: ["Composed"]
+        ),
         .library(
             name: "ComposedLayouts",
-            targets: ["ComposedLayouts"]),
+            targets: ["ComposedLayouts"]
+        ),
         .library(
             name: "ComposedUI",
-            targets: ["ComposedUI"]),
+            targets: ["ComposedUI"]
+        ),
     ],
     dependencies: [
-        .package(name: "Quick", url: "https://github.com/Quick/Quick.git", from: "4.0.0"),
-        .package(name: "Nimble", url: "https://github.com/Quick/Nimble.git", from: "9.2.1"),
+        .package(url: "https://github.com/Quick/Quick.git", from: "7.2.1"),
+        .package(url: "https://github.com/Quick/Nimble.git", from: "13.2.0"),
     ],
     targets: [
-        .target(name: "Composed"),
+        .target(
+            name: "Composed",
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency"),
+            ]
+        ),
         .testTarget(
             name: "ComposedTests",
             dependencies: ["Quick", "Nimble", "Composed"]),
 
         .target(
             name: "ComposedUI",
-            dependencies: ["Composed"]),
+            dependencies: ["Composed"],
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency"),
+            ]
+        ),
         .testTarget(
             name: "ComposedUITests",
             dependencies: ["Quick", "Nimble", "ComposedLayouts", "ComposedUI"]),
 
         .target(
             name: "ComposedLayouts",
-            dependencies: ["Composed", "ComposedUI"]),
+            dependencies: ["Composed", "ComposedUI"],
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency"),
+            ]
+        ),
     ]
 )

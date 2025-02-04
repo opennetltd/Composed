@@ -11,6 +11,7 @@ import Foundation
  provider.numberOfElements(in: 0) // returns 5
  provider.numberOfElements(in: 1) // return2 3
  */
+@MainActor
 open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpdateDelegate {
     
     /// Represents either a section or a provider
@@ -43,6 +44,8 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
             case .section: return nil
             case let .provider(provider):
                 return provider
+            case .aggregateSectionProvider(let provider):
+                return provider
             }
         }
     }
@@ -56,7 +59,48 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
     private var isRemovingChildProviderSections = false
     
     public init() { }
-    
+
+    public func printStructure() {
+        func printChildren(of child: Child, depth: Int, isLast: Bool) {
+            var prefix: String
+            if isLast {
+                prefix = "└──"
+            } else {
+                prefix = "├──"
+            }
+
+            if depth > 0 {
+                if isLast {
+                    prefix = "|   " + String(repeating: "    ", count: depth - 1) + prefix
+                } else {
+                    prefix = "|   " + String(repeating: "|   ", count: depth - 1) + prefix
+                }
+            }
+
+            switch child {
+            case .section(let section):
+                print(prefix, section)
+            case .aggregateSectionProvider(let sectionProvider):
+                if let composedSectionProvider = sectionProvider as? ComposedSectionProvider {
+                    print(prefix, composedSectionProvider)
+                    for (index, child) in composedSectionProvider.children.enumerated() {
+                        printChildren(of: child, depth: depth + 1, isLast: index == composedSectionProvider.children.indices.last)
+                    }
+                } else {
+                    print(prefix, sectionProvider)
+                }
+            case .provider(let sectionProvider):
+                print(prefix, sectionProvider)
+            }
+        }
+
+        print(self)
+
+        for (index, child) in children.enumerated() {
+            printChildren(of: child, depth: 0, isLast: index == children.indices.last)
+        }
+    }
+
     /// Returns the number of elements in the specified section
     /// - Parameter section: The section index
     /// - Returns: The number of elements
@@ -77,22 +121,22 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
         /// may return incorrect results.
         ///
         /// `isRemovingChildProviderSections` is used to track this and prevent the bug.
-        if !isRemovingChildProviderSections {
-            // A quick test for if this is the last child is a small optimisation, mainly
-            // beneficial when the provider has just been appended.
-            switch children.last {
-            case .provider(let lastProvider)?:
-                if lastProvider === provider {
-                    return numberOfSections - provider.numberOfSections
-                }
-            case .aggregateSectionProvider(let lastProvider)?:
-                if lastProvider === provider {
-                    return numberOfSections - provider.numberOfSections
-                }
-            case .section?, nil:
-                break
-            }
-        }
+//        if !isRemovingChildProviderSections {
+//            // A quick test for if this is the last child is a small optimisation, mainly
+//            // beneficial when the provider has just been appended.
+//            switch children.last {
+//            case .provider(let lastProvider)?:
+//                if lastProvider === provider {
+//                    return numberOfSections - provider.numberOfSections
+//                }
+//            case .aggregateSectionProvider(let lastProvider)?:
+//                if lastProvider === provider {
+//                    return numberOfSections - provider.numberOfSections
+//                }
+//            case .section?, nil:
+//                break
+//            }
+//        }
         
         var offset: Int = 0
         
@@ -142,9 +186,13 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
 
                 offset += 1
             case .provider(let childProvider):
+                if let index = childProvider.sectionOffset(for: section) {
+                    return offset + index
+                }
+
                 offset += childProvider.numberOfSections
             case .aggregateSectionProvider(let childProvider):
-                if let index = childProvider.sections.firstIndex(where: { $0 === section }) {
+                if let index = childProvider.sectionOffset(for: section) {
                     return offset + index
                 }
 
@@ -170,16 +218,26 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
     ///
     /// - Parameter sectionProvider: The section provider to return the first index of.
     /// - Returns: The first index of `sectionProvider`, or `nil` if the section provider is not a child.
+    @_disfavoredOverload
     public func firstIndex(of sectionProvider: SectionProvider) -> Int? {
         children.firstIndex(of: .provider(sectionProvider))
     }
-    
+
+    public func firstIndex(of sectionProvider: AggregateSectionProvider) -> Int? {
+        children.firstIndex(of: .aggregateSectionProvider(sectionProvider))
+    }
+
     /// Appends the specified `SectionProvider` to the provider
     /// - Parameter child: The `SectionProvider` to append
+    @_disfavoredOverload
     public func append(_ child: SectionProvider) {
         insert(child, at: children.count)
     }
-    
+
+    public func append(_ child: AggregateSectionProvider) {
+        insert(child, at: children.count)
+    }
+
     /// Appends the specified `Section` to the provider
     /// - Parameter child: The `Section` to append
     public func append(_ child: Section) {
@@ -209,7 +267,17 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
     ///   - index: The index where the `SectionProvider` should be inserted
     @_disfavoredOverload
     public func insert(_ child: SectionProvider, at index: Int) {
+        if let aggregate = child as? AggregateSectionProvider {
+            // Any external functions that use `SectionProvider` and call this will not call the
+            // overload for `AggregateSectionProvider` as that information is not present at compile
+            // time. We want to reduce the number of casts that we do so we do this on insert as we
+            // will be reading this more than it's written.
+            insert(aggregate, at: index)
+            return
+        }
+
         assert(!contains(child), "Attempting to append a section provider that is already a child")
+        assert(child !== self, "Attempting to append a self as a child")
         guard (0...children.count).contains(index) else { fatalError("Index out of bounds: \(index)") }
         
         child.updateDelegate = self
@@ -254,10 +322,15 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
     
     /// Removes the specified `SectionProvider`
     /// - Parameter child: The `SectionProvider` to remove
+    @_disfavoredOverload
     public func remove(_ child: SectionProvider) {
         remove(.provider(child))
     }
-    
+
+    public func remove(_ child: AggregateSectionProvider) {
+        remove(.aggregateSectionProvider(child))
+    }
+
     private func remove(_ child: Child) {
         guard let index = children.firstIndex(of: child) else { return }
         remove(at: index)
@@ -298,17 +371,25 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
 
     public func removeAll() {
         performBatchUpdates { updateDelegate in
-            children.reversed().forEach(remove(_:))
+            for child in children.reversed() {
+                remove(child)
+            }
         }
     }
     
     public func provider(_ provider: SectionProvider, didInsertSections sections: [Section], at indexes: IndexSet) {
         assert(sections.count == indexes.count, "Number of indexes must equal number of sections inserted")
-        
+
+        guard let sectionOffset = sectionOffset(for: provider) else {
+            assertionFailure("\(self) was notified of sections being inserted by \(provider), which is not known to this provider.")
+            return
+        }
+
+        print(Array(indexes))
+        print(sectionOffset)
+
         numberOfSections += sections.count
-        
-        let sectionOffset = self.sectionOffset(for: provider)!
-        
+
         let mappedIndexes = IndexSet(indexes.map { $0 + sectionOffset })
         zip(sections, mappedIndexes)
             .forEach { element in
@@ -320,15 +401,19 @@ open class ComposedSectionProvider: AggregateSectionProvider, SectionProviderUpd
     
     public func provider(_ provider: SectionProvider, didRemoveSections sections: [Section], at indexes: IndexSet) {
         assert(sections.count == indexes.count, "Number of indexes must equal number of sections removed")
-        
+
+        guard let sectionOffset = sectionOffset(for: provider) else {
+            assertionFailure("\(self) was notified of sections being removed by \(provider), which is not known to this provider.")
+            return
+        }
+
         isRemovingChildProviderSections = true
-        
+
         defer {
             isRemovingChildProviderSections = false
         }
-        
+
         numberOfSections -= sections.count
-        let sectionOffset = self.sectionOffset(for: provider)!
         let mappedIndexes = IndexSet(indexes.map { $0 + sectionOffset })
         mappedIndexes.reversed().forEach { self.sections.remove(at: $0) }
 
@@ -354,7 +439,11 @@ extension ComposedSectionProvider {
     public func contains(_ sectionProvider: SectionProvider) -> Bool {
         firstIndex(of: sectionProvider) != nil
     }
-    
+
+    public func contains(_ sectionProvider: AggregateSectionProvider) -> Bool {
+        firstIndex(of: sectionProvider) != nil
+    }
+
     /// Inserts the provided section after an existing section. If `existingSection` is not a child
     /// of this composed section provider this function does nothing.
     ///
@@ -382,6 +471,7 @@ extension ComposedSectionProvider {
     /// - Returns: The index of the inserted section provider, or `nil` if `existingSection` is not
     ///     a child of this composed section.
     @discardableResult
+    @_disfavoredOverload
     public func insert(_ newSectionProvider: SectionProvider, after existingSection: Section) -> Int? {
         guard let existingSectionIndex = firstIndex(of: existingSection) else { return nil }
         
@@ -390,7 +480,17 @@ extension ComposedSectionProvider {
         
         return newIndex
     }
-    
+
+    @discardableResult
+    public func insert(_ newSectionProvider: AggregateSectionProvider, after existingSection: Section) -> Int? {
+        guard let existingSectionIndex = firstIndex(of: existingSection) else { return nil }
+
+        let newIndex = existingSectionIndex + 1
+        insert(newSectionProvider, at: newIndex)
+
+        return newIndex
+    }
+
     /// Inserts the provided section after an existing section provider. If `existingSectionProvider`
     /// is not a child of this composed section provider this function does nothing.
     ///
@@ -400,6 +500,7 @@ extension ComposedSectionProvider {
     /// - Returns: The index of the inserted section, or `nil` if `existingSectionProvider` is not
     ///     a child of this composed section.
     @discardableResult
+    @_disfavoredOverload
     public func insert(_ newSection: Section, after existingSectionProvider: SectionProvider) -> Int? {
         guard let existingSectionProviderIndex = firstIndex(of: existingSectionProvider) else { return nil }
         
@@ -408,7 +509,17 @@ extension ComposedSectionProvider {
         
         return newIndex
     }
-    
+
+    @discardableResult
+    public func insert(_ newSection: Section, after existingSectionProvider: AggregateSectionProvider) -> Int? {
+        guard let existingSectionProviderIndex = firstIndex(of: existingSectionProvider) else { return nil }
+
+        let newIndex = existingSectionProviderIndex + 1
+        insert(newSection, at: newIndex)
+
+        return newIndex
+    }
+
     /// Inserts the provided section provider after an existing section provider. If `existingSectionProvider`
     /// is not a child of this composed section provider this function does nothing.
     ///
@@ -418,6 +529,7 @@ extension ComposedSectionProvider {
     /// - Returns: The index of the inserted section provider, or `nil` if `existingSection` is not
     ///     a child of this composed section.
     @discardableResult
+    @_disfavoredOverload
     public func insert(_ newSectionProvider: SectionProvider, after existingSectionProvider: SectionProvider) -> Int? {
         guard let existingSectionProviderIndex = firstIndex(of: existingSectionProvider) else { return nil }
         
@@ -426,7 +538,39 @@ extension ComposedSectionProvider {
         
         return newIndex
     }
-    
+
+    @discardableResult
+    @_disfavoredOverload
+    public func insert(_ newSectionProvider: SectionProvider, after existingSectionProvider: AggregateSectionProvider) -> Int? {
+        guard let existingSectionProviderIndex = firstIndex(of: existingSectionProvider) else { return nil }
+
+        let newIndex = existingSectionProviderIndex + 1
+        insert(newSectionProvider, at: newIndex)
+
+        return newIndex
+    }
+
+    @discardableResult
+    @_disfavoredOverload
+    public func insert(_ newSectionProvider: AggregateSectionProvider, after existingSectionProvider: SectionProvider) -> Int? {
+        guard let existingSectionProviderIndex = firstIndex(of: existingSectionProvider) else { return nil }
+
+        let newIndex = existingSectionProviderIndex + 1
+        insert(newSectionProvider, at: newIndex)
+
+        return newIndex
+    }
+
+    @discardableResult
+    public func insert(_ newSectionProvider: AggregateSectionProvider, after existingSectionProvider: AggregateSectionProvider) -> Int? {
+        guard let existingSectionProviderIndex = firstIndex(of: existingSectionProvider) else { return nil }
+
+        let newIndex = existingSectionProviderIndex + 1
+        insert(newSectionProvider, at: newIndex)
+
+        return newIndex
+    }
+
     /// Inserts the provided section before an existing section. If `existingSection` is not a child
     /// of this composed section provider this function does nothing.
     ///
@@ -453,6 +597,7 @@ extension ComposedSectionProvider {
     /// - Returns: The index of the inserted section provider, or `nil` if `existingSection` is not
     ///     a child of this composed section.
     @discardableResult
+    @_disfavoredOverload
     public func insert(_ newSectionProvider: SectionProvider, before existingSection: Section) -> Int? {
         guard let newIndex = firstIndex(of: existingSection) else { return nil }
         
@@ -460,7 +605,16 @@ extension ComposedSectionProvider {
         
         return newIndex
     }
-    
+
+    @discardableResult
+    public func insert(_ newSectionProvider: AggregateSectionProvider, before existingSection: Section) -> Int? {
+        guard let newIndex = firstIndex(of: existingSection) else { return nil }
+
+        insert(newSectionProvider, at: newIndex)
+
+        return newIndex
+    }
+
     /// Inserts the provided section before an existing section provider. If `existingSectionProvider`
     /// is not a child of this composed section provider this function does nothing.
     ///
@@ -470,6 +624,7 @@ extension ComposedSectionProvider {
     /// - Returns: The index of the inserted section, or `nil` if `existingSectionProvider` is not
     ///     a child of this composed section.
     @discardableResult
+    @_disfavoredOverload
     public func insert(_ newSection: Section, before existingSectionProvider: SectionProvider) -> Int? {
         guard let newIndex = firstIndex(of: existingSectionProvider) else { return nil }
         
@@ -477,7 +632,16 @@ extension ComposedSectionProvider {
         
         return newIndex
     }
-    
+
+    @discardableResult
+    public func insert(_ newSection: Section, before existingSectionProvider: AggregateSectionProvider) -> Int? {
+        guard let newIndex = firstIndex(of: existingSectionProvider) else { return nil }
+
+        insert(newSection, at: newIndex)
+
+        return newIndex
+    }
+
     /// Inserts the provided section provider before an existing section provider. If `existingSectionProvider`
     /// is not a child of this composed section provider this function does nothing.
     ///
@@ -487,11 +651,41 @@ extension ComposedSectionProvider {
     /// - Returns: The index of the inserted section provider, or `nil` if `existingSection` is not
     ///     a child of this composed section.
     @discardableResult
+    @_disfavoredOverload
     public func insert(_ newSectionProvider: SectionProvider, before existingSectionProvider: SectionProvider) -> Int? {
         guard let newIndex = firstIndex(of: existingSectionProvider) else { return nil }
         
         insert(newSectionProvider, at: newIndex)
         
+        return newIndex
+    }
+
+    @discardableResult
+    @_disfavoredOverload
+    public func insert(_ newSectionProvider: AggregateSectionProvider, before existingSectionProvider: SectionProvider) -> Int? {
+        guard let newIndex = firstIndex(of: existingSectionProvider) else { return nil }
+
+        insert(newSectionProvider, at: newIndex)
+
+        return newIndex
+    }
+
+    @discardableResult
+    @_disfavoredOverload
+    public func insert(_ newSectionProvider: SectionProvider, before existingSectionProvider: AggregateSectionProvider) -> Int? {
+        guard let newIndex = firstIndex(of: existingSectionProvider) else { return nil }
+
+        insert(newSectionProvider, at: newIndex)
+
+        return newIndex
+    }
+
+    @discardableResult
+    public func insert(_ newSectionProvider: AggregateSectionProvider, before existingSectionProvider: AggregateSectionProvider) -> Int? {
+        guard let newIndex = firstIndex(of: existingSectionProvider) else { return nil }
+
+        insert(newSectionProvider, at: newIndex)
+
         return newIndex
     }
 }

@@ -4,39 +4,38 @@ import Nimble
 
 @testable import Composed
 
-final class SectionProviderMapping_Spec: QuickSpec {
-
-    override func spec() {
+final class SectionProviderMapping_Spec: AsyncSpec {
+    override static func spec() {
         describe("SectionProviderMapping") {
             context("with a composed section provider") {
                 var global: ComposedSectionProvider!
                 var mapper: SectionProviderMapping!
                 var delegate: MockSectionProviderMappingDelegate!
 
-                beforeEach {
+                beforeEach { @MainActor in
                     global = ComposedSectionProvider()
                     mapper = SectionProviderMapping(provider: global)
                     delegate = MockSectionProviderMappingDelegate()
                     mapper.delegate = delegate
                 }
 
-                it("should become the delegate of the section provider") {
+                it("should become the delegate of the section provider") { @MainActor in
                     expect(global.updateDelegate) === mapper
                 }
 
                 context("when a child section has been added to the global provider") {
                     var child: Section!
 
-                    beforeEach {
+                    beforeEach { @MainActor in
                         child = ArraySection<String>()
                         global.append(child)
                     }
 
-                    it("should call the SectionProviderMapping(_:didInsertSections:) delegate function") {
+                    it("should call the SectionProviderMapping(_:didInsertSections:) delegate function") { @MainActor in
                         expect(delegate.didInsertSections).toNot(beNil())
                     }
 
-                    it("should notify the delegate of the inserted section") {
+                    it("should notify the delegate of the inserted section") { @MainActor in
                         expect(delegate.didInsertSections!.sections) == IndexSet(integer: 0)
                     }
                 }
@@ -46,7 +45,7 @@ final class SectionProviderMapping_Spec: QuickSpec {
                     var level1Section1: Section!
                     var level1Section2: Section!
 
-                    beforeEach {
+                    beforeEach { @MainActor in
                         level1EmbeddedSectionProvider = ComposedSectionProvider()
                         level1Section1 = ArraySection<String>()
                         level1Section2 = ArraySection<String>()
@@ -56,7 +55,7 @@ final class SectionProviderMapping_Spec: QuickSpec {
                         global.append(level1EmbeddedSectionProvider)
                     }
 
-                    it("should return 2 sections") {
+                    it("should return 2 sections") { @MainActor in
                         expect(mapper.numberOfSections) == 2
                     }
 
@@ -66,7 +65,7 @@ final class SectionProviderMapping_Spec: QuickSpec {
                         var level2Section2: Section!
                         var level2Section3: Section!
 
-                        beforeEach {
+                        beforeEach { @MainActor in
                             level2EmbeddedSectionProvider = ComposedSectionProvider()
                             level2Section1 = ArraySection<String>()
                             level2Section2 = ArraySection<String>()
@@ -78,15 +77,15 @@ final class SectionProviderMapping_Spec: QuickSpec {
                             level1EmbeddedSectionProvider.append(level2EmbeddedSectionProvider)
                         }
 
-                        it("should return 5 sections") {
+                        it("should return 5 sections") { @MainActor in
                             expect(mapper.numberOfSections) == 5
                         }
 
-                        it("should return a section offset of 2 for the composed section provider") {
+                        it("should return a section offset of 2 for the composed section provider") { @MainActor in
                             expect(mapper.sectionOffset(of: level2EmbeddedSectionProvider)) == 2
                         }
 
-                        it("should notify the delegate of the inserted sections") {
+                        it("should notify the delegate of the inserted sections") { @MainActor in
                             expect(delegate.didInsertSections!.sections) == IndexSet(2...4)
                         }
                     }
@@ -96,7 +95,7 @@ final class SectionProviderMapping_Spec: QuickSpec {
                     var level1EmbeddedSectionProvider: ComposedSectionProvider!
                     var level2EmbeddedSectionProvider: ComposedSectionProvider!
 
-                    beforeEach {
+                    beforeEach { @MainActor in
                         level1EmbeddedSectionProvider = ComposedSectionProvider()
                         level2EmbeddedSectionProvider = ComposedSectionProvider()
                         level1EmbeddedSectionProvider.append(level2EmbeddedSectionProvider)
