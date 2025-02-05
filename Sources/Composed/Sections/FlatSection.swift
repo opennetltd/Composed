@@ -93,11 +93,6 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
         updateDelegate?.section(self, deselect: sectionOffset + index)
     }
 
-    open func section(_ section: Section, move sourceIndex: Int, to destinationIndex: Int) {
-        guard let sectionOffset = indexForFirstElement(of: section) else { return }
-        updateDelegate?.section(self, move: sourceIndex + sectionOffset, to: destinationIndex + sectionOffset)
-    }
-
     open func sectionDidInvalidateHeader(_ section: Section) {
         // Headers of children are currently ignored.
     }
