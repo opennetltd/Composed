@@ -185,7 +185,11 @@ open class ComposedSectionProvider: SectionProvider, SectionProviderUpdateDelega
         performBatchUpdates { updateDelegate in
             children.insert(.provider(child), at: index)
             numberOfSections += child.sections.count
+            #if compiler(>=6)
             let providerIndex = children[0..<index].count(where: \.isSectionProvider)
+            #else
+            let providerIndex = children[0..<index].filter(\.isSectionProvider).count
+            #endif
             providers.insert(child, at: providerIndex)
             let firstIndex = children[0..<index].reduce(into: 0) { result, child in
                 result += child.numberOfSections
