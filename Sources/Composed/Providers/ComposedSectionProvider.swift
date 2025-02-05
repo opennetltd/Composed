@@ -13,6 +13,22 @@ import Foundation
  */
 @MainActor
 open class ComposedSectionProvider: SectionProvider, SectionProviderUpdateDelegate {
+    /// An opaque type representing the index of a direct child, either a ``Section`` or
+    /// ``SectionProvider``.
+    public struct Index: Hashable {
+        private enum Kind: Hashable {
+            case section
+            case provider
+        }
+
+        /// The index of the element in the `children` array.
+        private let childrenIndex: Int
+
+        private let kind: Kind
+
+        private let correspondingKindIndex: Int
+    }
+
     /// Represents either a section or a provider
     private enum Child: Equatable {
         case provider(SectionProvider)
@@ -82,7 +98,7 @@ open class ComposedSectionProvider: SectionProvider, SectionProviderUpdateDelega
         /// This is used to optimise the hot path that occurs when a child section providers
         /// notifies us of a change; rather than querying all children for the section offset of
         /// `provider` we can skip over them
-        let isDirectDescendant: Bool = providers.contains(where: { $0 === provider })
+        lazy var isDirectDescendant: Bool = providers.contains(where: { $0 === provider })
 
         for child in children {
             switch child {
