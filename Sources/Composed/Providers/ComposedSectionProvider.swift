@@ -13,22 +13,6 @@ import Foundation
  */
 @MainActor
 open class ComposedSectionProvider: SectionProvider, SectionProviderUpdateDelegate {
-    /// An opaque type representing the index of a direct child, either a ``Section`` or
-    /// ``SectionProvider``.
-    public struct Index: Hashable {
-        private enum Kind: Hashable {
-            case section
-            case provider
-        }
-
-        /// The index of the element in the `children` array.
-        private let childrenIndex: Int
-
-        private let kind: Kind
-
-        private let correspondingKindIndex: Int
-    }
-
     /// Represents either a section or a provider
     private enum Child: Equatable {
         case provider(SectionProvider)
