@@ -100,7 +100,7 @@ final class ComposedSectionProvider_Spec: AsyncSpec {
                 }
 
                 it("should pass the correct indexes to the delegate") { @MainActor in
-                    expect(mockDelegate.didInsertSectionsCalls.last!.2) == IndexSet(integer: countBefore)
+                    expect(mockDelegate.didInsertSectionsCalls.last?.2) == IndexSet(integer: countBefore)
                 }
 
                 it("should update the sections count") { @MainActor in
@@ -141,7 +141,7 @@ final class ComposedSectionProvider_Spec: AsyncSpec {
                 }
 
                 it("should pass the correct indexes to the delegate") { @MainActor in
-                    expect(mockDelegate.didInsertSectionsCalls.last!.2) == IndexSet(integersIn: countBefore..<(countBefore + sectionProvider.numberOfSections))
+                    expect(mockDelegate.didInsertSectionsCalls.last?.2) == IndexSet(integersIn: countBefore..<(countBefore + sectionProvider.numberOfSections))
                 }
 
                 it("should update the sections count") { @MainActor in
@@ -178,7 +178,7 @@ final class ComposedSectionProvider_Spec: AsyncSpec {
                 }
 
                 it("should pass the correct indexes to the delegate") { @MainActor in
-                    expect(mockDelegate.didRemoveSectionsCalls.last!.2) == IndexSet(integer: countBefore - 1)
+                    expect(mockDelegate.didRemoveSectionsCalls.last?.2) == IndexSet(integer: countBefore - 1)
                 }
 
                 it("should contain the correct sections") { @MainActor in
@@ -206,7 +206,7 @@ final class ComposedSectionProvider_Spec: AsyncSpec {
                 }
 
                 it("should pass through the removed indexes to the delegate") { @MainActor in
-                    expect(mockDelegate.didRemoveSectionsCalls.last!.2) == IndexSet([0, 1, 2])
+                    expect(mockDelegate.didRemoveSectionsCalls.last?.2) == IndexSet([2, 3, 4])
                 }
 
                 it("should update the number of sections") { @MainActor in
@@ -214,7 +214,7 @@ final class ComposedSectionProvider_Spec: AsyncSpec {
                 }
 
                 it("should pass itself to the delegate") { @MainActor in
-                    expect(mockDelegate.didRemoveSectionsCalls.last!.0) === child2
+                    expect(mockDelegate.didRemoveSectionsCalls.last?.0) === global
                 }
 
                 it("should contain the correct sections") { @MainActor in
@@ -222,77 +222,6 @@ final class ComposedSectionProvider_Spec: AsyncSpec {
                     expect(global.sections[1]) === child1b
                     expect(global.sections[2]) === child2f
                     expect(global.sections[3]) === child2h
-                }
-            }
-
-            context("when the last section provider is a segmented section provider") {
-                var child3: SegmentedSectionProvider!
-                var child3a: ComposedSectionProvider!
-                var child3a_0: ArraySection<String>!
-                var child3b: ComposedSectionProvider!
-                // Will have 10 children
-                var child3c: ComposedSectionProvider!
-
-                beforeEach { @MainActor in
-                    child3 = SegmentedSectionProvider()
-                    child3a = ComposedSectionProvider()
-                    child3a_0 = ArraySection<String>()
-                    child3b = ComposedSectionProvider()
-                    child3c = ComposedSectionProvider()
-
-                    child3a.append(child3a_0)
-                    (0..<10).forEach { _ in
-                        child3b.append(ArraySection<String>())
-                    }
-
-                    global.append(child3)
-                    child3.append(child3a)
-                    child3.append(child3b)
-                    child3.append(child3c)
-                }
-
-                context("switches to a segment with more sections than the global provider contains") {
-                    var mockDelegate: MockSectionProviderUpdateDelegate!
-                    var countBefore: Int!
-                    var sectionCountBefore: Int!
-                    var sectionCountDifference: Int!
-
-                    beforeEach { @MainActor in
-                        mockDelegate = MockSectionProviderUpdateDelegate()
-                        global.updateDelegate = mockDelegate
-
-                        countBefore = global.numberOfSections
-
-                        sectionCountBefore = child3.numberOfSections
-                        child3.currentIndex = 1
-                        sectionCountDifference = child3.numberOfSections - sectionCountBefore
-                    }
-
-                    it("should update the number of sections") { @MainActor in
-                        expect(global.numberOfSections) == countBefore + sectionCountDifference
-                    }
-                }
-
-                context("switches to a segment with less sections than the global provider contains") {
-                    var mockDelegate: MockSectionProviderUpdateDelegate!
-                    var countBefore: Int!
-                    var sectionCountBefore: Int!
-                    var sectionCountDifference: Int!
-
-                    beforeEach { @MainActor in
-                        mockDelegate = MockSectionProviderUpdateDelegate()
-                        global.updateDelegate = mockDelegate
-
-                        countBefore = global.numberOfSections
-
-                        sectionCountBefore = child3.numberOfSections
-                        child3.currentIndex = 2
-                        sectionCountDifference = child3.numberOfSections - sectionCountBefore
-                    }
-
-                    it("should update the number of sections") { @MainActor in
-                        expect(global.numberOfSections) == countBefore + sectionCountDifference
-                    }
                 }
             }
         }

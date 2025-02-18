@@ -93,11 +93,6 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
         updateDelegate?.section(self, deselect: sectionOffset + index)
     }
 
-    open func section(_ section: Section, move sourceIndex: Int, to destinationIndex: Int) {
-        guard let sectionOffset = indexForFirstElement(of: section) else { return }
-        updateDelegate?.section(self, move: sourceIndex + sectionOffset, to: destinationIndex + sectionOffset)
-    }
-
     open func sectionDidInvalidateHeader(_ section: Section) {
         // Headers of children are currently ignored.
     }
@@ -372,7 +367,7 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
             case .sectionProvider(let childSectionProvider):
                 if childSectionProvider === sectionProvider {
                     return offset
-                } else if let aggregate = childSectionProvider as? AggregateSectionProvider, let sectionOffset = aggregate.sectionOffset(for: sectionProvider) {
+                } else if let aggregate = childSectionProvider as? ComposedSectionProvider, let sectionOffset = aggregate.sectionOffset(for: sectionProvider) {
                     return childSectionProvider.sections[0..<sectionOffset].reduce(into: offset, { $0 += $1.numberOfElements })
                 }
 
@@ -449,7 +444,7 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
             case .sectionProvider(let childSectionProvider):
                 if childSectionProvider === sectionProvider {
                     return index
-                } else if let aggregate = childSectionProvider as? AggregateSectionProvider, let offset = aggregate.sectionOffset(for: sectionProvider) {
+                } else if let aggregate = childSectionProvider as? ComposedSectionProvider, let offset = aggregate.sectionOffset(for: sectionProvider) {
                     return index + offset
                 }
 

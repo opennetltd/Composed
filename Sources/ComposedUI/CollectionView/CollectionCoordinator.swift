@@ -61,9 +61,7 @@ open class CollectionCoordinator: NSObject {
     }
 
     /// Returns the root section provider associated with this coordinator
-    public var sectionProvider: SectionProvider {
-        return mapper.provider
-    }
+    public let sectionProvider: SectionProvider
 
     /// If `true` this `CollectionCoordinator` instance will log changes to the system log.
     public var enableLogs: Bool = false
@@ -82,8 +80,6 @@ open class CollectionCoordinator: NSObject {
     /// A (temporary) flag that is set to `true` when batch updates should be ignored because `reloadData`
     /// will be called after the updates.
     fileprivate var reloadDataBatchUpdates = false
-
-    private var mapper: SectionProviderMapping
 
     private let collectionView: UICollectionView
 
@@ -125,9 +121,15 @@ open class CollectionCoordinator: NSObject {
     ///   - sectionProvider: The sectionProvider to associate with this coordinator
     public init(collectionView: UICollectionView, sectionProvider: SectionProvider) {
         self.collectionView = collectionView
-        mapper = SectionProviderMapping(provider: sectionProvider)
+        self.sectionProvider = sectionProvider
 
         super.init()
+
+        sectionProvider.updateDelegate = self
+        for section in sectionProvider.sections {
+            section.updateDelegate = self
+        }
+
         prepareSections()
 
         delegateObserver = collectionView.observe(\.delegate, options: [.initial, .new]) { [weak self] collectionView, _ in
@@ -206,14 +208,6 @@ open class CollectionCoordinator: NSObject {
         )
     }
 
-    /// Replaces the current sectionProvider with the specified provider
-    /// - Parameter sectionProvider: The new sectionProvider
-    open func replace(sectionProvider: SectionProvider) {
-        mapper = SectionProviderMapping(provider: sectionProvider)
-        prepareSections()
-        collectionView.reloadData()
-    }
-
     /// Enables / disables editing on this coordinator
     /// - Parameters:
     ///   - editing: True if editing should be enabled, false otherwise
@@ -252,7 +246,7 @@ open class CollectionCoordinator: NSObject {
     open func invalidateVisibleCells() {
         for (indexPath, cell) in zip(collectionView.indexPathsForVisibleItems, collectionView.visibleCells) {
             let elements = elementsProvider(for: indexPath.section)
-            elements.cell(for: indexPath.item).configure(cell, indexPath.item, mapper.provider.sections[indexPath.section])
+            elements.cell(for: indexPath.item).configure(cell, indexPath.item, sectionProvider.sections[indexPath.section])
         }
     }
 
@@ -261,10 +255,9 @@ open class CollectionCoordinator: NSObject {
         debugLog("Preparing sections")
 
         cachedElementsProviders.removeAll()
-        mapper.delegate = self
 
-        for index in 0..<mapper.numberOfSections {
-            guard let section = mapper.provider.sections[index] as? UICollectionViewSection else {
+        for index in 0..<sectionProvider.numberOfSections {
+            guard let section = sectionProvider.sections[index] as? UICollectionViewSection else {
                 fatalError("No provider available for section: \(index), or it does not conform to CollectionSectionProvider")
             }
 
@@ -381,28 +374,8 @@ open class CollectionCoordinator: NSObject {
             }
         }
     }
-}
 
-// MARK: - SectionProviderMappingDelegate
-
-extension CollectionCoordinator: SectionProviderMappingDelegate {
-    public func mappingDidInvalidate(_ mapping: SectionProviderMapping) {
-        guard !reloadDataBatchUpdates else {
-            /// Not necessary; below code will be executed in `mapping(_:willPerformBatchUpdates:forceReloadData:)`
-            return
-        }
-        assert(!changesReducer.hasActiveUpdates, "Cannot invalidate within a batch of updates; `UICollectionView` does not support `reloadData` inside `performBatchUpdates`")
-        debugLog(#function)
-        changesReducer.clearUpdates()
-        prepareSections()
-        collectionView.reloadData()
-    }
-
-    public func mapping(_ mapping: SectionProviderMapping, willPerformBatchUpdates updates: () -> Void) {
-        self.mapping(mapping, willPerformBatchUpdates: updates, forceReloadData: false)
-    }
-
-    public func mapping(_ mapping: SectionProviderMapping, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
+    private func performBatchUpdates(_ updates: () -> Void, forceReloadData: Bool) {
         guard !changesReducer.hasActiveUpdates else {
             assert(!forceReloadData, "Cannot reload data while inside `performBatchUpdates`")
 
@@ -427,13 +400,13 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
 
         guard !isPerformingUpdates else {
             print("Batch updates are being applied to \(self) after a previous batch has been applied but before the collection view has finished laying out. This can occur when the configuration for one of your views triggers an update. Since the update has not yet finished this can cause data to be out of sync. See \(#filePath):L\(#line) for more details. Calling `reloadData`.")
-            mappingDidInvalidate(mapping)
+            invalidateAll()
             return
         }
 
         if enableLogs {
-            debugLog("Starting batch updates with \(mapper.numberOfSections) sections")
-            for section in 0 ..< mapper.numberOfSections {
+            debugLog("Starting batch updates with \(sectionProvider.numberOfSections) sections")
+            for section in 0 ..< sectionProvider.numberOfSections {
                 debugLog("Starting with \(elementsProvider(for: section).numberOfElements) items in \(section)")
             }
         }
@@ -549,180 +522,186 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
         debugLog("`performBatchUpdates` call has completed")
     }
 
-    private func reloadSupplementaryView(ofKind kind: String, at indexPath: IndexPath) {
-        let context: UICollectionViewLayoutInvalidationContext
-
-        if collectionView.collectionViewLayout is UICollectionViewFlowLayout {
-            // Despite us not using any properties exclusive to
-            // UICollectionViewFlowLayoutInvalidationContext a flow layout will crash when
-            // invalidating with a context that is not an instance or subclass of UICollectionViewFlowLayoutInvalidationContext.
-            context = UICollectionViewFlowLayoutInvalidationContext()
-        } else {
-            context = UICollectionViewLayoutInvalidationContext()
+    private func invalidateAll() {
+        guard !reloadDataBatchUpdates else {
+            /// Not necessary; below code will be executed in `mapping(_:willPerformBatchUpdates:forceReloadData:)`
+            return
         }
-
-        context.invalidateSupplementaryElements(
-            ofKind: UICollectionView.elementKindSectionHeader,
-            at: [indexPath]
-        )
-        invalidateLayout(with: context)
-
-        // Invalidating the layout only changes the size; if the view is visible we also need to
-        // reconfigure it.
-        guard collectionView.indexPathsForVisibleSupplementaryElements(ofKind: kind).contains(indexPath) else { return }
-
-        let elementsProvider = self.elementsProvider(for: indexPath.section)
-        let section = self.mapper.provider.sections[indexPath.section]
-
-        if kind == UICollectionView.elementKindSectionHeader {
-            guard let header = elementsProvider.header else {
-                assertionFailure("Asking to reload header at \(indexPath) but \(elementsProvider) from \(section) did not supply a header")
-                return
-            }
-
-            guard header.kind.rawValue == kind else {
-                assertionFailure("Asking to reload header at \(indexPath) but \(elementsProvider) from \(section) did supplied a header of kind \(header.kind.rawValue), not \(kind)")
-                return
-            }
-
-            guard let headerView = collectionView.supplementaryView(forElementKind: kind, at: indexPath) else {
-                assertionFailure("Collection view said that supplementary element of kind \(kind) is visible at \(indexPath) but it did not return a view")
-                return
-            }
-            debugLog("Configuring existing header view of kind \(kind) at \(indexPath): \(headerView)")
-            header.configure(headerView, indexPath.section, section)
-        }
+        assert(!changesReducer.hasActiveUpdates, "Cannot invalidate within a batch of updates; `UICollectionView` does not support `reloadData` inside `performBatchUpdates`")
+        debugLog(#function)
+        changesReducer.clearUpdates()
+        prepareSections()
+        collectionView.reloadData()
     }
 
-    public func mapping(_ mapping: SectionProviderMapping, didInsertSections sections: IndexSet) {
+    private func indexPath(for index: Int, in section: Section) -> IndexPath? {
+        guard let offset = sectionProvider.sectionOffset(for: section) else {
+            assertionFailure("Cannot call \(#function) with a section not in the hierachy")
+            return nil
+        }
+        return IndexPath(item: index, section: offset)
+    }
+}
+
+extension CollectionCoordinator: SectionProviderUpdateDelegate {
+    public func provider(_ provider: any Composed.SectionProvider, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
+        performBatchUpdates(updates, forceReloadData: forceReloadData)
+    }
+
+    public func invalidateAll(_ provider: any Composed.SectionProvider) {
+        invalidateAll()
+    }
+    
+    public func provider(_ provider: any Composed.SectionProvider, didInsertSections sections: [any Composed.Section], at indexes: IndexSet) {
+        debugLog(#function + "\(Array(sections))")
+
+        sections.forEach { $0.updateDelegate = self }
+
+        guard !reloadDataBatchUpdates else { return }
+
+        guard isPerformingUpdates else {
+            prepareSections()
+            collectionView.insertSections(indexes)
+            return
+        }
+
+        changesReducer.insertGroups(indexes)
+    }
+    
+    public func provider(_ provider: any Composed.SectionProvider, didRemoveSections sections: [any Composed.Section], at indexes: IndexSet) {
         debugLog(#function + "\(Array(sections))")
 
         guard !reloadDataBatchUpdates else { return }
 
+        sections.forEach { $0.updateDelegate = nil }
+
         guard isPerformingUpdates else {
             prepareSections()
-            collectionView.insertSections(sections)
+            collectionView.deleteSections(indexes)
             return
         }
 
-        changesReducer.insertGroups(sections)
+        changesReducer.removeGroups(indexes)
     }
+}
 
-    public func mapping(_ mapping: SectionProviderMapping, didRemoveSections sections: IndexSet) {
-        debugLog(#function + "\(Array(sections))")
+extension CollectionCoordinator: SectionUpdateDelegate {
+    public func section(_ section: any Composed.Section, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
+        performBatchUpdates(updates, forceReloadData: forceReloadData)
+    }
+    
+    public func invalidateAll(_ section: any Composed.Section) {
+        invalidateAll()
+    }
+    
+    public func section(_ section: any Composed.Section, didInsertElementAt index: Int) {
+        debugLog(#function + "\(section)" + "\(index)")
+
+        guard let indexPath = self.indexPath(for: index, in: section) else { return }
 
         guard !reloadDataBatchUpdates else { return }
 
         guard isPerformingUpdates else {
             prepareSections()
-            collectionView.deleteSections(sections)
+            collectionView.insertItems(at: [indexPath])
             return
         }
 
-        changesReducer.removeGroups(sections)
-    }
+        changesReducer.insertElements(at: [indexPath])
 
-    public func mapping(_ mapping: SectionProviderMapping, didInsertElementsAt indexPaths: [IndexPath]) {
-        debugLog(#function + "\(indexPaths)")
+    }
+    
+    public func section(_ section: any Composed.Section, didRemoveElementAt index: Int) {
+        debugLog(#function + "\(section)" + "\(index)")
+
+        guard let indexPath = self.indexPath(for: index, in: section) else { return }
 
         guard !reloadDataBatchUpdates else { return }
 
         guard isPerformingUpdates else {
             prepareSections()
-            collectionView.insertItems(at: indexPaths)
+            collectionView.deleteItems(at: [indexPath])
             return
         }
 
-        changesReducer.insertElements(at: indexPaths)
+        changesReducer.removeElements(at: [indexPath])
+
     }
+    
+    public func section(_ section: any Composed.Section, didUpdateElementAt index: Int) {
+        debugLog(#function + "\(section)" + "\(index)")
 
-    public func mapping(_ mapping: SectionProviderMapping, didRemoveElementsAt indexPaths: [IndexPath]) {
-        debugLog(#function + "\(indexPaths)")
-
-        guard !reloadDataBatchUpdates else { return }
-
-        guard isPerformingUpdates else {
-            prepareSections()
-            collectionView.deleteItems(at: indexPaths)
-            return
-        }
-
-        changesReducer.removeElements(at: indexPaths)
-    }
-
-    public func mapping(_ mapping: SectionProviderMapping, didUpdateElementsAt indexPaths: [IndexPath]) {
-        debugLog(#function + "\(indexPaths)")
+        guard let indexPath = self.indexPath(for: index, in: section) else { return }
 
         guard !reloadDataBatchUpdates else { return }
 
         if isPerformingUpdates {
-            changesReducer.updateElements(at: indexPaths)
+            changesReducer.updateElements(at: [indexPath])
         } else {
-            prepareSections()
-
-            var indexPathsToReload: [IndexPath] = []
-            for indexPath in indexPaths {
-                guard
-                    let section = sectionProvider.sections[indexPath.section] as? CollectionUpdateMethodProvider
-                else {
-                    indexPathsToReload.append(indexPath)
-                    continue
-                }
-
-                switch section.updateMethod(forElementAt: indexPath.item) {
-                case .reload:
-                    indexPathsToReload.append(indexPath)
-                case .reconfigure:
-                    if #available(iOS 15, *) {
-                        collectionView.reconfigureItems(at: [indexPath])
-                    } else if let cell = collectionView.cellForItem(at: indexPath) {
-                        cachedElementsProviders[indexPath.section]
-                            .cell(for: indexPath.item)
-                            .configure(cell, indexPath.item, mapper.provider.sections[indexPath.section])
-                    }
-                }
+            guard
+                let section = section as? CollectionUpdateMethodProvider
+            else {
+                collectionView.reloadItems(at: [indexPath])
+                return
             }
 
-            guard !indexPathsToReload.isEmpty else { return }
-
-            collectionView.reloadItems(at: indexPaths)
+            switch section.updateMethod(forElementAt: indexPath.item) {
+            case .reload:
+                collectionView.reloadItems(at: [indexPath])
+            case .reconfigure:
+                if #available(iOS 15, *) {
+                    collectionView.reconfigureItems(at: [indexPath])
+                } else if let cell = collectionView.cellForItem(at: indexPath) {
+                    cachedElementsProviders[indexPath.section]
+                        .cell(for: indexPath.item)
+                        .configure(cell, indexPath.item, sectionProvider.sections[indexPath.section])
+                }
+            }
         }
     }
+    
+    public func section(_ section: any Composed.Section, didMoveElementAt sourceIndex: Int, to destinationIndex: Int) {
+        debugLog(#function + "\(section)" + "; from: \(sourceIndex)" + "; to: \(destinationIndex)")
 
-    public func mapping(_ mapping: SectionProviderMapping, didMoveElementsAt moves: [(IndexPath, IndexPath)]) {
-        debugLog(#function + "\(moves)")
+        guard
+            let sourceIndexPath = indexPath(for: sourceIndex, in: section),
+            let destinationIndexPath = indexPath(for: destinationIndex, in: section)
+        else {
+            return
+        }
 
         guard !reloadDataBatchUpdates else { return }
 
         guard isPerformingUpdates else {
             prepareSections()
-            moves.forEach { collectionView.moveItem(at: $0.0, to: $0.1) }
+            collectionView.moveItem(at: sourceIndexPath, to: destinationIndexPath)
             return
         }
 
-        changesReducer.moveElements(moves)
+        changesReducer.moveElements([(from: sourceIndexPath, to: destinationIndexPath)])
     }
-
-    public func mapping(_ mapping: SectionProviderMapping, selectedIndexesIn section: Int) -> [Int] {
+    
+    public func selectedIndexes(in section: any Composed.Section) -> [Int] {
+        guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return [] }
         let indexPaths = collectionView.indexPathsForSelectedItems ?? []
-        return indexPaths.filter { $0.section == section }.map { $0.item }
+        return indexPaths.filter { $0.section == sectionIndex }.map { $0.item }
     }
-
-    public func mapping(_ mapping: SectionProviderMapping, select indexPath: IndexPath) {
+    
+    public func section(_ section: any Composed.Section, select index: Int) {
+        guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
+        let indexPath = IndexPath(item: index, section: sectionIndex)
         collectionView.selectItem(at: indexPath, animated: true, scrollPosition: [])
     }
-
-    public func mapping(_ mapping: SectionProviderMapping, deselect indexPath: IndexPath) {
+    
+    public func section(_ section: any Composed.Section, deselect index: Int) {
+        guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
+        let indexPath = IndexPath(item: index, section: sectionIndex)
         collectionView.deselectItem(at: indexPath, animated: true)
     }
+    
+    public func sectionDidInvalidateHeader(_ section: any Composed.Section) {
+        guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
 
-    public func mapping(_ mapping: SectionProviderMapping, move sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
-        guard !reloadDataBatchUpdates else { return }
-        // TODO: Check `isPerformingBatchedUpdates`
-        self.mapping(mapping, didMoveElementsAt: [(sourceIndexPath, destinationIndexPath)])
-    }
-
-    public func mappingDidInvalidateHeader(at sectionIndex: Int) {
         if isPerformingUpdates {
             changesReducer.reloadHeader(IndexPath(item: 0, section: sectionIndex))
         } else {
@@ -733,13 +712,15 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
             }
         }
     }
+    
+    public func sectionDidInvalidateFooter(_ section: any Composed.Section) {
+        guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
 
-    public func mappingDidInvalidateFooter(at sectionIndex: Int) {
         // Ensure elements provider is available, views have been registered, etc.
         prepareSections()
 
         let elementsProvider = self.elementsProvider(for: sectionIndex)
-        let section = self.mapper.provider.sections[sectionIndex]
+        let section = self.sectionProvider.sections[sectionIndex]
 
         debugLog("Section \(sectionIndex) invalidated footer")
 
@@ -778,12 +759,61 @@ extension CollectionCoordinator: SectionProviderMappingDelegate {
     }
 }
 
+// MARK: - SectionProviderMappingDelegate
+
+extension CollectionCoordinator {
+    private func reloadSupplementaryView(ofKind kind: String, at indexPath: IndexPath) {
+        let context: UICollectionViewLayoutInvalidationContext
+
+        if collectionView.collectionViewLayout is UICollectionViewFlowLayout {
+            // Despite us not using any properties exclusive to
+            // UICollectionViewFlowLayoutInvalidationContext a flow layout will crash when
+            // invalidating with a context that is not an instance or subclass of UICollectionViewFlowLayoutInvalidationContext.
+            context = UICollectionViewFlowLayoutInvalidationContext()
+        } else {
+            context = UICollectionViewLayoutInvalidationContext()
+        }
+
+        context.invalidateSupplementaryElements(
+            ofKind: UICollectionView.elementKindSectionHeader,
+            at: [indexPath]
+        )
+        invalidateLayout(with: context)
+
+        // Invalidating the layout only changes the size; if the view is visible we also need to
+        // reconfigure it.
+        guard collectionView.indexPathsForVisibleSupplementaryElements(ofKind: kind).contains(indexPath) else { return }
+
+        let elementsProvider = self.elementsProvider(for: indexPath.section)
+        let section = self.sectionProvider.sections[indexPath.section]
+
+        if kind == UICollectionView.elementKindSectionHeader {
+            guard let header = elementsProvider.header else {
+                assertionFailure("Asking to reload header at \(indexPath) but \(elementsProvider) from \(section) did not supply a header")
+                return
+            }
+
+            guard header.kind.rawValue == kind else {
+                assertionFailure("Asking to reload header at \(indexPath) but \(elementsProvider) from \(section) did supplied a header of kind \(header.kind.rawValue), not \(kind)")
+                return
+            }
+
+            guard let headerView = collectionView.supplementaryView(forElementKind: kind, at: indexPath) else {
+                assertionFailure("Collection view said that supplementary element of kind \(kind) is visible at \(indexPath) but it did not return a view")
+                return
+            }
+            debugLog("Configuring existing header view of kind \(kind) at \(indexPath): \(headerView)")
+            header.configure(headerView, indexPath.section, section)
+        }
+    }
+}
+
 // MARK: - UICollectionViewDataSource
 
 extension CollectionCoordinator: UICollectionViewDataSource {
 
     public func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return mapper.numberOfSections
+        return sectionProvider.numberOfSections
     }
 
     public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -796,7 +826,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
         }
 
         let elements = elementsProvider(for: indexPath.section)
-        let section = mapper.provider.sections[indexPath.section]
+        let section = sectionProvider.sections[indexPath.section]
         let cellElement = elements.cell(for: indexPath.item)
         cellElement.willAppear?(cell, indexPath.item, section)
 
@@ -830,7 +860,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
             }
         }
 
-        let section = mapper.provider.sections[indexPath.section]
+        let section = sectionProvider.sections[indexPath.section]
         cellSectionMap[cell] = (cellElement, section)
         if #unavailable(iOS 18) {
             // On iOS 18+, in some very rare scenarios, configuring the cell here can cause a crash
@@ -861,7 +891,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
         guard indexPath.section < sectionProvider.numberOfSections else { return }
 
         let elements = elementsProvider(for: indexPath.section)
-        let section = mapper.provider.sections[indexPath.section]
+        let section = sectionProvider.sections[indexPath.section]
 
         if let header = elements.header, header.kind.rawValue == elementKind {
             header.willAppear?(view, indexPath.section, section)
@@ -876,7 +906,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
 
     public func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         let elements = elementsProvider(for: indexPath.section)
-        let section = mapper.provider.sections[indexPath.section]
+        let section = sectionProvider.sections[indexPath.section]
 
         if let header = elements.header, header.kind.rawValue == kind {
             let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: header.reuseIdentifier, for: indexPath)
@@ -912,7 +942,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
         guard !indexPath.isEmpty else { return }
         guard indexPath.section < sectionProvider.numberOfSections else { return }
         let elements = elementsProvider(for: indexPath.section)
-        let section = mapper.provider.sections[indexPath.section]
+        let section = sectionProvider.sections[indexPath.section]
 
         if let header = elements.header, header.kind.rawValue == elementKind {
             elements.header?.didDisappear?(view, indexPath.section, section)
@@ -938,7 +968,7 @@ extension CollectionCoordinator {
     // MARK: - Context Menus
 
     public func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
-        guard let provider = mapper.provider.sections[indexPath.section] as? CollectionContextMenuHandler,
+        guard let provider = sectionProvider.sections[indexPath.section] as? CollectionContextMenuHandler,
               provider.allowsContextMenu(forElementAt: indexPath.item),
               let cell = collectionView.cellForItem(at: indexPath) else { return nil }
         let preview = provider.contextMenu(previewForElementAt: indexPath.item, cell: cell)
@@ -950,21 +980,21 @@ extension CollectionCoordinator {
     public func collectionView(_ collectionView: UICollectionView, previewForHighlightingContextMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
         guard let identifier = configuration.identifier as? String, let indexPath = IndexPath(string: identifier) else { return nil }
         guard let cell = collectionView.cellForItem(at: indexPath),
-              let provider = mapper.provider.sections[indexPath.section] as? CollectionContextMenuHandler else { return nil }
+              let provider = sectionProvider.sections[indexPath.section] as? CollectionContextMenuHandler else { return nil }
         return provider.contextMenu(previewForHighlightingElementAt: indexPath.item, cell: cell)
     }
 
     public func collectionView(_ collectionView: UICollectionView, previewForDismissingContextMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
         guard let identifier = configuration.identifier as? String, let indexPath = IndexPath(string: identifier) else { return nil }
         guard let cell = collectionView.cellForItem(at: indexPath),
-              let provider = mapper.provider.sections[indexPath.section] as? CollectionContextMenuHandler else { return nil }
+              let provider = sectionProvider.sections[indexPath.section] as? CollectionContextMenuHandler else { return nil }
         return provider.contextMenu(previewForDismissingElementAt: indexPath.item, cell: cell)
     }
 
     public func collectionView(_ collectionView: UICollectionView, willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration, animator: UIContextMenuInteractionCommitAnimating) {
         guard let identifier = configuration.identifier as? String, let indexPath = IndexPath(string: identifier) else { return }
         guard let cell = collectionView.cellForItem(at: indexPath),
-              let provider = mapper.provider.sections[indexPath.section] as? CollectionContextMenuHandler else { return }
+              let provider = sectionProvider.sections[indexPath.section] as? CollectionContextMenuHandler else { return }
         provider.contextMenu(willPerformPreviewActionForElementAt: indexPath.item, cell: cell, animator: animator)
     }
 
@@ -975,7 +1005,7 @@ extension CollectionCoordinator: UICollectionViewDelegate {
     // MARK: - Selection
 
     open func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool {
-        guard let handler = mapper.provider.sections[indexPath.section] as? SelectionHandler else {
+        guard let handler = sectionProvider.sections[indexPath.section] as? SelectionHandler else {
             return originalDelegate?.collectionView?(collectionView, shouldHighlightItemAt: indexPath) ?? true
         }
 
@@ -983,7 +1013,7 @@ extension CollectionCoordinator: UICollectionViewDelegate {
     }
 
     open func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
-        guard let handler = mapper.provider.sections[indexPath.section] as? SelectionHandler else {
+        guard let handler = sectionProvider.sections[indexPath.section] as? SelectionHandler else {
             return originalDelegate?.collectionView?(collectionView, shouldSelectItemAt: indexPath) ?? false
         }
 
@@ -995,7 +1025,7 @@ extension CollectionCoordinator: UICollectionViewDelegate {
             originalDelegate?.collectionView?(collectionView, didSelectItemAt: indexPath)
         }
 
-        guard let handler = mapper.provider.sections[indexPath.section] as? SelectionHandler else { return }
+        guard let handler = sectionProvider.sections[indexPath.section] as? SelectionHandler else { return }
         if let handler = handler as? CollectionSelectionHandler, let cell = collectionView.cellForItem(at: indexPath) {
             handler.didSelect(at: indexPath.item, cell: cell)
         } else {
@@ -1004,10 +1034,13 @@ extension CollectionCoordinator: UICollectionViewDelegate {
 
         guard collectionView.allowsMultipleSelection, !handler.allowsMultipleSelection else { return }
 
-        let indexPaths = mapping(mapper, selectedIndexesIn: indexPath.section)
-            .map { IndexPath(item: $0, section: indexPath.section ) }
-            .filter { $0 != indexPath }
-        indexPaths.forEach { collectionView.deselectItem(at: $0, animated: true) }
+        let indexPathsToDeselect = collectionView
+            .indexPathsForSelectedItems?
+            .filter({ $0.section == indexPath.section && $0 != indexPath })
+        ?? []
+        for indexPathToDeselect in indexPathsToDeselect {
+            collectionView.deselectItem(at: indexPathToDeselect, animated: true)
+        }
     }
 
     open func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -1015,7 +1048,7 @@ extension CollectionCoordinator: UICollectionViewDelegate {
     }
 
     open func collectionView(_ collectionView: UICollectionView, shouldDeselectItemAt indexPath: IndexPath) -> Bool {
-        guard let handler = mapper.provider.sections[indexPath.section] as? SelectionHandler else {
+        guard let handler = sectionProvider.sections[indexPath.section] as? SelectionHandler else {
             return originalDelegate?.collectionView?(collectionView, shouldDeselectItemAt: indexPath) ?? true
         }
 
@@ -1027,7 +1060,7 @@ extension CollectionCoordinator: UICollectionViewDelegate {
             originalDelegate?.collectionView?(collectionView, didDeselectItemAt: indexPath)
         }
 
-        guard let handler = mapper.provider.sections[indexPath.section] as? SelectionHandler else { return }
+        guard let handler = sectionProvider.sections[indexPath.section] as? SelectionHandler else { return }
         if let collectionHandler = handler as? CollectionSelectionHandler, let cell = collectionView.cellForItem(at: indexPath) {
             collectionHandler.didDeselect(at: indexPath.item, cell: cell)
         } else {
