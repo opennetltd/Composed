@@ -638,6 +638,8 @@ extension CollectionCoordinator: SectionUpdateDelegate {
         if isPerformingUpdates {
             changesReducer.updateElements(at: [indexPath])
         } else {
+            prepareSections()
+
             guard
                 let section = section as? CollectionUpdateMethodProvider
             else {
