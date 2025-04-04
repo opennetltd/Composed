@@ -69,6 +69,12 @@ open class CollectionCoordinator: NSObject {
     /// A closure that will be called whenever a debug log message is produced.
     public var logger: ((_ message: String) -> Void)?
 
+    public weak var scrollViewDelegate: UIScrollViewDelegate?
+
+    private var scrollViewDelegateForwardingTarget: UIScrollViewDelegate? {
+        scrollViewDelegate ?? originalDelegate
+    }
+
     internal var changesReducer = ChangesReducer()
 
     /// A flag indicating if the `updates` closure is currently being called in a call to `performBatchUpdates`.
@@ -97,14 +103,22 @@ open class CollectionCoordinator: NSObject {
     #endif
     private var delegateObserver: NSKeyValueObservation?
 
+    /// A flag used to track when ``originalDelegate`` is being updated. This is required to play
+    /// nice with other frameworks that also override the delegate and forward the calls to the
+    /// original, such as RxSwift.
+    private var isUpdatingCollectionViewDelegate = false
+
     private weak var originalDataSource: UICollectionViewDataSource?
     private var dataSourceObserver: NSKeyValueObservation?
+    private var isUpdatingCollectionViewDataSource = false
 
     private weak var originalDragDelegate: UICollectionViewDragDelegate?
     private var dragDelegateObserver: NSKeyValueObservation?
+    private var isUpdatingCollectionViewDragDelegate = false
 
     private weak var originalDropDelegate: UICollectionViewDropDelegate?
     private var dropDelegateObserver: NSKeyValueObservation?
+    private var isUpdatingCollectionViewDropDelegate = false
 
     private var cachedElementsProviders: [UICollectionViewSectionElementsProvider] = []
     private var cellSectionMap = [UICollectionViewCell: (CollectionCellElement, Section)]()
@@ -132,69 +146,60 @@ open class CollectionCoordinator: NSObject {
 
         prepareSections()
 
-        delegateObserver = collectionView.observe(\.delegate, options: [.initial, .new]) { [weak self] collectionView, _ in
-            #if swift(>=5.10)
-            MainActor.assumeIsolated {
+        originalDelegate = collectionView.delegate
+        originalDataSource = collectionView.dataSource
+        originalDragDelegate = collectionView.dragDelegate
+        originalDropDelegate = collectionView.dropDelegate
+
+        collectionView.delegate = self
+        collectionView.dataSource = self
+        collectionView.dragDelegate = self
+        collectionView.dropDelegate = self
+
+        delegateObserver = collectionView.observe(\.delegate, options: [.new]) { [weak self] collectionView, _ in
+            @MainActor @inline(__always)
+            func handleDelegateChange() {
                 guard let self, collectionView.delegate !== self else { return }
+
                 self.originalDelegate = collectionView.delegate
                 collectionView.delegate = self
             }
+
+            #if swift(>=5.10)
+            MainActor.assumeIsolated {
+                handleDelegateChange()
+            }
             #else
             MainActor.unsafeAssumeIsolated {
-                guard let self, collectionView.delegate !== self else { return }
-                self.originalDelegate = collectionView.delegate
-                collectionView.delegate = self
+                handleDelegateChange()
             }
             #endif
         }
 
-        dataSourceObserver = collectionView.observe(\.dataSource, options: [.initial, .new]) { [weak self] collectionView, _ in
-            #if swift(>=5.10)
-            MainActor.assumeIsolated {
-                guard let self, collectionView.dataSource !== self else { return }
-                self.originalDataSource = collectionView.dataSource
-                collectionView.dataSource = self
-            }
-            #else
-            MainActor.unsafeAssumeIsolated {
-                guard let self, collectionView.dataSource !== self else { return }
-                self.originalDataSource = collectionView.dataSource
-                collectionView.dataSource = self
-            }
-            #endif
-        }
-
-        dragDelegateObserver = collectionView.observe(\.dragDelegate, options: [.initial, .new]) { [weak self] collectionView, _ in
-            #if swift(>=5.10)
-            MainActor.assumeIsolated {
-                guard let self, collectionView.dragDelegate !== self else { return }
-                self.originalDragDelegate = collectionView.dragDelegate
-                collectionView.dragDelegate = self
-            }
-            #else
-            MainActor.unsafeAssumeIsolated {
-                guard let self, collectionView.dragDelegate !== self else { return }
-                self.originalDragDelegate = collectionView.dragDelegate
-                collectionView.dragDelegate = self
-            }
-            #endif
-        }
-
-        dropDelegateObserver = collectionView.observe(\.dropDelegate, options: [.initial, .new]) { [weak self] collectionView, _ in
-            #if swift(>=5.10)
-            MainActor.assumeIsolated {
-                guard let self, collectionView.dropDelegate !== self else { return }
-                self.originalDropDelegate = collectionView.dropDelegate
-                collectionView.dropDelegate = self
-            }
-            #else
-            MainActor.unsafeAssumeIsolated {
-                guard let self, collectionView.dropDelegate !== self else { return }
-                self.originalDropDelegate = collectionView.dropDelegate
-                collectionView.dropDelegate = self
-            }
-            #endif
-        }
+//        func overrideCollectionViewDelegate<Delegate: AnyObject>(
+//            collectionView: UICollectionView,
+//            delegate: Delegate,
+//            delegateKeyPath: ReferenceWritableKeyPath<UICollectionView, Delegate?>,
+//            originalDelegateStorageKeyPath: ReferenceWritableKeyPath<Delegate, Delegate?>,
+//            checkFlagKeyPath: ReferenceWritableKeyPath<Delegate, Bool>,
+//            observerKeyPath: ReferenceWritableKeyPath<Delegate, NSObjectProtocol?>
+//        ) {
+//            delegate[keyPath: observerKeyPath] = collectionView.observe(delegateKeyPath, options: [.initial, .new]) { [unowned self] collectionView, _ in
+//                #if swift(>=5.10)
+//                MainActor.assumeIsolated {
+//                    guard collectionView[keyPath: delegateKeyPath] !== delegate else { return }
+//                    delegate[keyPath: originalDelegateStorageKeyPath] = collectionView[keyPath: delegateKeyPath]
+//                    collectionView[keyPath: delegateKeyPath] = delegate
+//                }
+//                #else
+//                MainActor.unsafeAssumeIsolated {
+//                    guard let self, collectionView.delegate !== self else { return }
+//                    self.originalDelegate = collectionView.delegate
+//                    collectionView.delegate = self
+//                }
+//                #endif
+//            }
+//        }
 
         collectionView.register(
             PlaceholderSupplementaryView.self,
@@ -543,6 +548,19 @@ open class CollectionCoordinator: NSObject {
     }
 }
 
+@MainActor
+protocol CellProvider {
+    func cell(at index: Int, in section: Section) -> UICollectionViewCell?
+}
+
+extension CollectionCoordinator: CellProvider {
+    func cell(at index: Int, in section: Section) -> UICollectionViewCell? {
+        guard let indexPath = indexPath(for: index, in: section) else { return nil }
+
+        return collectionView.cellForItem(at: indexPath)
+    }
+}
+
 extension CollectionCoordinator: SectionProviderUpdateDelegate {
     public func provider(_ provider: any Composed.SectionProvider, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
         performBatchUpdates(updates, forceReloadData: forceReloadData)
@@ -810,6 +828,66 @@ extension CollectionCoordinator {
     }
 }
 
+// MARK: - UIScrollViewDelegate
+
+extension CollectionCoordinator: UIScrollViewDelegate {
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        scrollViewDelegateForwardingTarget?.scrollViewDidScroll?(scrollView)
+    }
+
+    public func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        scrollViewDelegateForwardingTarget?.scrollViewDidZoom?(scrollView)
+    }
+
+    public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        scrollViewDelegateForwardingTarget?.scrollViewWillBeginDragging?(scrollView)
+    }
+
+    public func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        scrollViewDelegateForwardingTarget?.scrollViewWillEndDragging?(scrollView, withVelocity: velocity, targetContentOffset: targetContentOffset)
+    }
+
+    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        scrollViewDelegateForwardingTarget?.scrollViewDidEndDragging?(scrollView, willDecelerate: decelerate)
+    }
+
+    public func scrollViewWillBeginDecelerating(_ scrollView: UIScrollView) {
+        scrollViewDelegateForwardingTarget?.scrollViewWillBeginDecelerating?(scrollView)
+    }
+
+    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        scrollViewDelegateForwardingTarget?.scrollViewDidEndDecelerating?(scrollView)
+    }
+
+    public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        scrollViewDelegateForwardingTarget?.scrollViewDidEndScrollingAnimation?(scrollView)
+    }
+
+    public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        scrollViewDelegateForwardingTarget?.viewForZooming?(in: scrollView)
+    }
+
+    public func scrollViewWillBeginZooming(_ scrollView: UIScrollView, with view: UIView?) {
+        scrollViewDelegateForwardingTarget?.scrollViewWillBeginZooming?(scrollView, with: view)
+    }
+
+    public func scrollViewDidEndZooming(_ scrollView: UIScrollView, with view: UIView?, atScale scale: CGFloat) {
+        scrollViewDelegateForwardingTarget?.scrollViewDidEndZooming?(scrollView, with: view, atScale: scale)
+    }
+
+    public func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
+        scrollViewDelegateForwardingTarget?.scrollViewShouldScrollToTop?(scrollView) ?? true
+    }
+
+    public func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
+        scrollViewDelegateForwardingTarget?.scrollViewDidScrollToTop?(scrollView)
+    }
+
+    public func scrollViewDidChangeAdjustedContentInset(_ scrollView: UIScrollView) {
+        scrollViewDelegateForwardingTarget?.scrollViewDidChangeAdjustedContentInset?(scrollView)
+    }
+}
+
 // MARK: - UICollectionViewDataSource
 
 extension CollectionCoordinator: UICollectionViewDataSource {
@@ -1045,10 +1123,6 @@ extension CollectionCoordinator: UICollectionViewDelegate {
         }
     }
 
-    open func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        originalDelegate?.scrollViewDidScroll?(scrollView)
-    }
-
     open func collectionView(_ collectionView: UICollectionView, shouldDeselectItemAt indexPath: IndexPath) -> Bool {
         guard let handler = sectionProvider.sections[indexPath.section] as? SelectionHandler else {
             return originalDelegate?.collectionView?(collectionView, shouldDeselectItemAt: indexPath) ?? true
@@ -1069,20 +1143,6 @@ extension CollectionCoordinator: UICollectionViewDelegate {
             handler.didDeselect(at: indexPath.item)
         }
     }
-
-    // MARK: - Forwarding
-
-    open override func responds(to aSelector: Selector!) -> Bool {
-        if super.responds(to: aSelector) { return true }
-        if originalDelegate?.responds(to: aSelector) ?? false { return true }
-        return false
-    }
-
-    open override func forwardingTarget(for aSelector: Selector!) -> Any? {
-        if super.responds(to: aSelector) { return self }
-        return originalDelegate
-    }
-
 }
 
 // MARK: - UICollectionViewDragDelegate
