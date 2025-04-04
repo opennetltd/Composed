@@ -183,3 +183,52 @@ extension ArraySection {
         }
     }
 }
+
+extension ArraySection where Element: Equatable, Element: Identifiable {
+    public func replaceElements(_ newElements: [Element]) {
+        // TODO: Infer moves from `id`
+        performBatchUpdates { updateDelegate in
+            let previousElementsCount = elements.count
+            let newElementsCount = newElements.count
+            let diffCount = newElementsCount - previousElementsCount
+
+            defer {
+                elements = newElements
+            }
+
+            if diffCount == 0 {
+                (0 ..< newElementsCount).forEach { index in
+                    guard elements[index].id != newElements[index].id else { return }
+                    guard elements[index] != newElements[index] else { return }
+                    updateDelegate?.section(self, didUpdateElementAt: index)
+                }
+            } else if diffCount > 0 {
+                // `diffCount` elements have been inserted
+                if previousElementsCount > 0 {
+                    (0 ..< previousElementsCount).forEach { index in
+                        guard elements[index].id != newElements[index].id else { return }
+                        guard elements[index] != newElements[index] else { return }
+                        updateDelegate?.section(self, didUpdateElementAt: index)
+                    }
+                }
+
+                (previousElementsCount ..< newElementsCount).forEach { index in
+                    updateDelegate?.section(self, didInsertElementAt: index)
+                }
+            } else {
+                // `diffCount` elements have been removed
+                if newElementsCount > 0 {
+                    (0 ..< newElementsCount).forEach { index in
+                        guard elements[index].id != newElements[index].id else { return }
+                        guard elements[index] != newElements[index] else { return }
+                        updateDelegate?.section(self, didUpdateElementAt: index)
+                    }
+                }
+
+                (newElementsCount ..< previousElementsCount).reversed().forEach { index in
+                    updateDelegate?.section(self, didRemoveElementAt: index)
+                }
+            }
+        }
+    }
+}
