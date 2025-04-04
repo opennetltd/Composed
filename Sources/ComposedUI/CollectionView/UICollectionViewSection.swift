@@ -10,6 +10,17 @@ public protocol UICollectionViewSection: Section {
     func collectionViewElementsProvider(with traitCollection: UITraitCollection) -> UICollectionViewSectionElementsProvider
 }
 
+extension UICollectionViewSection {
+    public func reconfigureCell<View: UICollectionViewCell>(at index: Int, configure: @MainActor (View) -> Void) {
+        guard let updateDelegate = updateDelegate as? CellProvider else {
+            return
+        }
+
+        guard let cell = updateDelegate.cell(at: index, in: self) as? View else { return }
+        configure(cell)
+    }
+}
+
 @MainActor
 public protocol SingleUICollectionViewSection: UICollectionViewSection {
     func section(with traitCollection: UITraitCollection) -> CollectionSection
