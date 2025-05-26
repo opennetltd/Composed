@@ -477,22 +477,26 @@ open class CollectionCoordinator: NSObject {
         if let elementsUpdated, !elementsUpdated.isEmpty {
             debugLog("Need to perform a another `performBatchUpdates` to apply reloads")
             collectionView.performBatchUpdates({
-                debugLog("Reloading items \(elementsUpdated.sorted(by: <))")
-                let (reloads, reconfigures) = elementsUpdated.reduce(into: (reloads: [IndexPath](), reconfigures: [IndexPath]())) { partialResult, indexPath in
-                    if let section = sectionProvider.sections[indexPath.section] as? CollectionUpdateMethodProvider {
-                        switch section.updateMethod(forElementAt: indexPath.item) {
-                        case .reload:
-                            partialResult.reloads.append(indexPath)
-                        case .reconfigure:
-                            partialResult.reconfigures.append(indexPath)
-                        }
-                    } else {
-                        partialResult.reloads.append(indexPath)
-                    }
-                }
-                collectionView.reloadItems(at: reloads)
                 if #available(iOS 15, *) {
+                    let (reloads, reconfigures) = elementsUpdated.reduce(into: (reloads: [IndexPath](), reconfigures: [IndexPath]())) { partialResult, indexPath in
+                        if let section = sectionProvider.sections[indexPath.section] as? CollectionUpdateMethodProvider {
+                            switch section.updateMethod(forElementAt: indexPath.item) {
+                            case .reload:
+                                partialResult.reloads.append(indexPath)
+                            case .reconfigure:
+                                partialResult.reconfigures.append(indexPath)
+                            }
+                        } else {
+                            partialResult.reloads.append(indexPath)
+                        }
+                    }
+                    debugLog("Reloading items \(reloads.sorted(by: <))")
+                    collectionView.reloadItems(at: reloads)
+                    debugLog("Reconfiguring items \(reconfigures.sorted(by: <))")
                     collectionView.reconfigureItems(at: reconfigures)
+                } else {
+                    debugLog("Reloading items \(elementsUpdated.sorted(by: <))")
+                    collectionView.reloadItems(at: Array(elementsUpdated))
                 }
 
                 debugLog("Item reload updates have been applied")
@@ -862,7 +866,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
 
         let section = sectionProvider.sections[indexPath.section]
         cellSectionMap[cell] = (cellElement, section)
-        if #unavailable(iOS 18) {
+//        if #unavailable(iOS 18) {
             // On iOS 18+, in some very rare scenarios, configuring the cell here can cause a crash
             // triggered by the collection view:
             //
@@ -879,7 +883,7 @@ extension CollectionCoordinator: UICollectionViewDataSource {
             // configuring the cell in `collectionView(_:willDisplay:forItemAt:)` on all versions of
             // iOS.
             cellElement.configure(cell, indexPath.item, section)
-        }
+//        }
         return cell
     }
 
