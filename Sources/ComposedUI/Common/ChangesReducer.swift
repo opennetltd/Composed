@@ -268,9 +268,10 @@ internal struct ChangesReducer: CustomReflectable {
          */
         indexPaths.sorted(by: { $0.item > $1.item }).forEach { removedIndexPath in
             let originalRemovedIndexPath = removedIndexPath
-            let removedIndexPath = transformIndexPath(removedIndexPath)
 
-            guard !changeset.groupsInserted.contains(removedIndexPath.section) else { return }
+            guard !changeset.groupsInserted.contains(originalRemovedIndexPath.section) else { return }
+
+            let removedIndexPath = transformIndexPath(removedIndexPath)
 
             let originalWasInInserted = changeset.elementsInserted.contains(originalRemovedIndexPath)
 
