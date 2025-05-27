@@ -42,7 +42,7 @@ internal struct ChangesReducer: CustomReflectable {
     private var activeBatches = 0
 
     /// The changeset for the current batch of updates.
-    private var changeset: Changeset = Changeset()
+    private(set) var changeset: Changeset = Changeset()
 
     internal init() {}
 

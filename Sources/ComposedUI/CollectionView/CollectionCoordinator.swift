@@ -69,7 +69,13 @@ open class CollectionCoordinator: NSObject {
     /// A closure that will be called whenever a debug log message is produced.
     public var logger: ((_ message: String) -> Void)?
 
-    internal var changesReducer = ChangesReducer()
+    internal var changesReducer = ChangesReducer() {
+        didSet {
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+            debugLog(String(reflecting: changesReducer.changeset))
+            #endif
+        }
+    }
 
     /// A flag indicating if the `updates` closure is currently being called in a call to `performBatchUpdates`.
     ///
@@ -252,7 +258,9 @@ open class CollectionCoordinator: NSObject {
 
     // Prepares and caches the section to improve performance
     private func prepareSections() {
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
         debugLog("Preparing sections")
+        #endif
 
         cachedElementsProviders.removeAll()
 
@@ -341,6 +349,7 @@ open class CollectionCoordinator: NSObject {
         delegate?.coordinatorDidUpdate(self)
     }
 
+    #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
     fileprivate func debugLog(_ message: @autoclosure () -> String) {
         lazy var message = message()
 
@@ -374,6 +383,7 @@ open class CollectionCoordinator: NSObject {
             }
         }
     }
+    #endif
 
     private func performBatchUpdates(_ updates: () -> Void, forceReloadData: Bool) {
         guard !changesReducer.hasActiveUpdates else {
@@ -388,12 +398,16 @@ open class CollectionCoordinator: NSObject {
         }
 
         guard !forceReloadData else {
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Performing updates before reloading data")
+            #endif
             updates()
 
             prepareSections()
 
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Reloading data")
+            #endif
             collectionView.reloadData()
             return
         }
@@ -404,12 +418,12 @@ open class CollectionCoordinator: NSObject {
             return
         }
 
-        if enableLogs {
-            debugLog("Starting batch updates with \(sectionProvider.numberOfSections) sections")
-            for section in 0 ..< sectionProvider.numberOfSections {
-                debugLog("Starting with \(elementsProvider(for: section).numberOfElements) items in \(section)")
-            }
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+        debugLog("Starting batch updates with \(sectionProvider.numberOfSections) sections")
+        for section in 0 ..< sectionProvider.numberOfSections {
+            debugLog("Starting with \(elementsProvider(for: section).numberOfElements) items in \(section)")
         }
+        #endif
 
         isPerformingUpdates = true
 
@@ -422,9 +436,13 @@ open class CollectionCoordinator: NSObject {
 
          This is mainly for making crashes here easier to debug.
          */
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
         debugLog("Layout out collection view, if needed")
+        #endif
         collectionView.layoutIfNeeded()
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
         debugLog("Collection view has been laid out")
+        #endif
 
         /// The index paths of the items that need to be updated. Due to a bug in UICollectionView
         /// these updates are performed in a second performBatchUpdates immediately after the first
@@ -433,8 +451,19 @@ open class CollectionCoordinator: NSObject {
 
         var supplementaryViewUpdates: Set<Changeset.SupplementaryViewUpdate>?
 
+        let performBatchUpdatesCompletion: ((_ isFinished: Bool) -> Void)?
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+        performBatchUpdatesCompletion = { [weak self] isFinished in
+            self?.debugLog("Batch updates completed. isFinished: \(isFinished)")
+        }
+        #else
+        performBatchUpdatesCompletion = nil
+        #endif
+
         collectionView.performBatchUpdates({
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Starting batch updates")
+            #endif
             changesReducer.beginUpdating()
 
             updates()
@@ -446,38 +475,60 @@ open class CollectionCoordinator: NSObject {
                 return
             }
 
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Deleting sections \(changeset.groupsRemoved.sorted(by: >))")
+            #endif
             collectionView.deleteSections(IndexSet(changeset.groupsRemoved))
 
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Deleting items \(changeset.elementsRemoved.sorted(by: >))")
+            #endif
             collectionView.deleteItems(at: Array(changeset.elementsRemoved))
 
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Inserting items \(changeset.elementsInserted.sorted(by: <))")
+            #endif
             collectionView.insertItems(at: Array(changeset.elementsInserted))
 
             elementsUpdated = changeset.elementsUpdated
 
             changeset.elementsMoved.forEach { move in
+                #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
                 debugLog("Moving \(move.from) to \(move.to)")
+                #endif
                 collectionView.moveItem(at: move.from, to: move.to)
             }
 
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Inserting sections \(changeset.groupsInserted.sorted(by: >))")
+            #endif
+
             collectionView.insertSections(IndexSet(changeset.groupsInserted))
 
             // At this point the supplementary view have not had their indexes updates, so we need
             // to wait until the completion block to make changes to them.
             supplementaryViewUpdates = changeset.supplementaryViewUpdates
 
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Batch updates have been applied")
-        }, completion: { [weak self] isFinished in
-            self?.debugLog("Batch updates completed. isFinished: \(isFinished)")
-        })
+            #endif
+        }, completion: performBatchUpdatesCompletion)
 
         if let elementsUpdated, !elementsUpdated.isEmpty {
+            let completion: ((_ isFinished: Bool) -> Void)?
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Need to perform a another `performBatchUpdates` to apply reloads")
+            completion = { [weak self] isFinished in
+                self?.debugLog("Item reload batch updates completed. isFinished: \(isFinished)")
+            }
+            #else
+            completion = nil
+            #endif
+
             collectionView.performBatchUpdates({
+                #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
                 debugLog("Reloading items \(elementsUpdated.sorted(by: <))")
+                #endif
                 let (reloads, reconfigures) = elementsUpdated.reduce(into: (reloads: [IndexPath](), reconfigures: [IndexPath]())) { partialResult, indexPath in
                     if let section = sectionProvider.sections[indexPath.section] as? CollectionUpdateMethodProvider {
                         switch section.updateMethod(forElementAt: indexPath.item) {
@@ -495,16 +546,28 @@ open class CollectionCoordinator: NSObject {
                     collectionView.reconfigureItems(at: reconfigures)
                 }
 
+                #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
                 debugLog("Item reload updates have been applied")
-            }, completion: { [weak self] isFinished in
-                self?.debugLog("Item reload batch updates completed. isFinished: \(isFinished)")
-            })
+                #endif
+            }, completion: completion)
         }
 
         if let supplementaryViewUpdates, !supplementaryViewUpdates.isEmpty {
+            let completion: ((_ isFinished: Bool) -> Void)?
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Need to perform a another `performBatchUpdates` to apply supplementary view updates")
+            completion = { [weak self] isFinished in
+                self?.debugLog("Supplementary view updates completed. isFinished: \(isFinished)")
+            }
+            #else
+            completion = nil
+            #endif
+
             collectionView.performBatchUpdates({
+                #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
                 debugLog("Performing supplementary view updates \(supplementaryViewUpdates.sorted(by: { $0.indexPath < $1.indexPath }))")
+                #endif
+
                 for supplementaryViewUpdate in supplementaryViewUpdates {
                     reloadSupplementaryView(
                         ofKind: supplementaryViewUpdate.kind,
@@ -512,14 +575,17 @@ open class CollectionCoordinator: NSObject {
                     )
                 }
 
+                #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
                 debugLog("Supplementary view updates have been applied")
-            }, completion: { [weak self] isFinished in
-                self?.debugLog("Supplementary view updates completed. isFinished: \(isFinished)")
-            })
+                #endif
+            }, completion: completion)
         }
 
         isPerformingUpdates = false
+
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
         debugLog("`performBatchUpdates` call has completed")
+        #endif
     }
 
     private func invalidateAll() {
@@ -528,7 +594,9 @@ open class CollectionCoordinator: NSObject {
             return
         }
         assert(!changesReducer.hasActiveUpdates, "Cannot invalidate within a batch of updates; `UICollectionView` does not support `reloadData` inside `performBatchUpdates`")
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
         debugLog(#function)
+        #endif
         changesReducer.clearUpdates()
         prepareSections()
         collectionView.reloadData()
@@ -553,7 +621,11 @@ extension CollectionCoordinator: SectionProviderUpdateDelegate {
     }
     
     public func provider(_ provider: any Composed.SectionProvider, didInsertSections sections: [any Composed.Section], at indexes: IndexSet) {
-        debugLog(#function + "\(Array(sections))")
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+        debugLog(
+            #function + "; sections: \(Array(sections.map(\.debugDescription))); indexes: \(Array(indexes))"
+        )
+        #endif
 
         sections.forEach { $0.updateDelegate = self }
 
@@ -569,7 +641,11 @@ extension CollectionCoordinator: SectionProviderUpdateDelegate {
     }
     
     public func provider(_ provider: any Composed.SectionProvider, didRemoveSections sections: [any Composed.Section], at indexes: IndexSet) {
-        debugLog(#function + "\(Array(sections))")
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+        debugLog(
+            #function + "; sections: \(Array(sections.map(\.debugDescription))); indexes: \(Array(indexes))"
+        )
+        #endif
 
         guard !reloadDataBatchUpdates else { return }
 
@@ -585,6 +661,14 @@ extension CollectionCoordinator: SectionProviderUpdateDelegate {
     }
 }
 
+#if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+extension Composed.Section {
+    fileprivate var debugDescription: String {
+        "\(String(reflecting: self)) <\(Unmanaged.passUnretained(self).toOpaque())>"
+    }
+}
+#endif
+
 extension CollectionCoordinator: SectionUpdateDelegate {
     public func section(_ section: any Composed.Section, willPerformBatchUpdates updates: () -> Void, forceReloadData: Bool) {
         performBatchUpdates(updates, forceReloadData: forceReloadData)
@@ -593,9 +677,11 @@ extension CollectionCoordinator: SectionUpdateDelegate {
     public func invalidateAll(_ section: any Composed.Section) {
         invalidateAll()
     }
-    
-    public func section(_ section: any Composed.Section, didInsertElementAt index: Int) {
-        debugLog(#function + "\(section)" + "\(index)")
+
+    public func section(_ section: Composed.Section, didInsertElementAt index: Int) {
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+        debugLog(#function + "; section: \(section.debugDescription); index: \(index)")
+        #endif
 
         guard let indexPath = self.indexPath(for: index, in: section) else { return }
 
@@ -608,11 +694,12 @@ extension CollectionCoordinator: SectionUpdateDelegate {
         }
 
         changesReducer.insertElements(at: [indexPath])
-
     }
     
     public func section(_ section: any Composed.Section, didRemoveElementAt index: Int) {
-        debugLog(#function + "\(section)" + "\(index)")
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+        debugLog(#function + "; section: \(section.debugDescription)>; index: \(index)")
+        #endif
 
         guard let indexPath = self.indexPath(for: index, in: section) else { return }
 
@@ -629,7 +716,9 @@ extension CollectionCoordinator: SectionUpdateDelegate {
     }
     
     public func section(_ section: any Composed.Section, didUpdateElementAt index: Int) {
-        debugLog(#function + "\(section)" + "\(index)")
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+        debugLog(#function + "; section: \(section.debugDescription)>; index: \(index)")
+        #endif
 
         guard let indexPath = self.indexPath(for: index, in: section) else { return }
 
@@ -663,7 +752,9 @@ extension CollectionCoordinator: SectionUpdateDelegate {
     }
     
     public func section(_ section: any Composed.Section, didMoveElementAt sourceIndex: Int, to destinationIndex: Int) {
-        debugLog(#function + "\(section)" + "; from: \(sourceIndex)" + "; to: \(destinationIndex)")
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+        debugLog(#function + "\(section.debugDescription)>" + "; from: \(sourceIndex)" + "; to: \(destinationIndex)")
+        #endif
 
         guard
             let sourceIndexPath = indexPath(for: sourceIndex, in: section),
@@ -724,7 +815,9 @@ extension CollectionCoordinator: SectionUpdateDelegate {
         let elementsProvider = self.elementsProvider(for: sectionIndex)
         let section = self.sectionProvider.sections[sectionIndex]
 
+        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
         debugLog("Section \(sectionIndex) invalidated footer")
+        #endif
 
         func reloadFooter() {
             let context = UICollectionViewFlowLayoutInvalidationContext()
@@ -804,7 +897,9 @@ extension CollectionCoordinator {
                 assertionFailure("Collection view said that supplementary element of kind \(kind) is visible at \(indexPath) but it did not return a view")
                 return
             }
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Configuring existing header view of kind \(kind) at \(indexPath): \(headerView)")
+            #endif
             header.configure(headerView, indexPath.section, section)
         }
     }
@@ -912,7 +1007,9 @@ extension CollectionCoordinator: UICollectionViewDataSource {
 
         if let header = elements.header, header.kind.rawValue == kind {
             let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: header.reuseIdentifier, for: indexPath)
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
             debugLog("Using \(view) for \(kind) supplementary view at \(indexPath). Configured for section \(section)")
+            #endif
             header.configure(view, indexPath.section, section)
             return view
         } else if let footer = elements.footer, footer.kind.rawValue == kind {
