@@ -3,6 +3,7 @@ import CoreData
 import Composed
 
 /// Provides drag and drop handling for `UICollectionView`'s
+@MainActor
 public protocol CollectionDropHandler: UICollectionViewSection {
 
     func dropSessionWillBegin(_ session: UIDropSession)

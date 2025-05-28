@@ -2,6 +2,7 @@ import UIKit
 import ComposedUI
 
 /// A helper class that encapsulates the sizing logic for building column/table style layouts with `UICollectionViewFlowLayout`
+@MainActor
 open class CollectionFlowLayoutSizingStrategy {
 
     /// The sizing mode to apply for all cells

@@ -3,6 +3,7 @@ import Composed
 
 /// Defines a configuration for a section in a `UICollectionView`.
 /// The section must contain a cell element, but can also optionally include a header and/or footer element.
+@MainActor
 open class CollectionSection: SingleUICollectionViewSectionElementsProvider {
 
     /// The cell configuration element

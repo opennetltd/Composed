@@ -42,7 +42,7 @@ internal struct ChangesReducer: CustomReflectable {
     private var activeBatches = 0
 
     /// The changeset for the current batch of updates.
-    private var changeset: Changeset = Changeset()
+    private(set) var changeset: Changeset = Changeset()
 
     internal init() {}
 
@@ -268,9 +268,10 @@ internal struct ChangesReducer: CustomReflectable {
          */
         indexPaths.sorted(by: { $0.item > $1.item }).forEach { removedIndexPath in
             let originalRemovedIndexPath = removedIndexPath
-            let removedIndexPath = transformIndexPath(removedIndexPath)
 
-            guard !changeset.groupsInserted.contains(removedIndexPath.section) else { return }
+            guard !changeset.groupsInserted.contains(originalRemovedIndexPath.section) else { return }
+
+            let removedIndexPath = transformIndexPath(removedIndexPath)
 
             let originalWasInInserted = changeset.elementsInserted.contains(originalRemovedIndexPath)
 
@@ -331,6 +332,7 @@ internal struct ChangesReducer: CustomReflectable {
         moveElements(moves.map { Changeset.Move(from: $0.from, to: $0.to) })
     }
 
+    @MainActor
     internal mutating func reloadHeader(_ indexPath: IndexPath) {
         changeset.supplementaryViewUpdates.insert(Changeset.SupplementaryViewUpdate(indexPath: indexPath, kind: UICollectionView.elementKindSectionHeader))
     }

@@ -1,6 +1,7 @@
 import Foundation
 
 /// Provides edit handling for a Section
+@MainActor
 public protocol EditingHandler: Section {
 
     /// Returns all element indexes that have allowed editing

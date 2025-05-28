@@ -1,7 +1,8 @@
 import Foundation
 
 /// A section that flattens each of its children in to a single section.
-open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, SectionProviderUpdateDelegate {
+@MainActor
+open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDelegate {
     private enum Child {
         /// A single section.
         case section(Section)
@@ -33,16 +34,6 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
     public private(set) var numberOfElements: Int = 0
 
     public weak var updateDelegate: SectionUpdateDelegate?
-
-    public var customMirror: Mirror {
-        Mirror(
-            self,
-            children: [
-                "children": children,
-            ],
-            displayStyle: .struct
-        )
-    }
 
     private var children: [Child] = []
 
@@ -100,11 +91,6 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
     open func section(_ section: Section, deselect index: Int) {
         guard let sectionOffset = indexForFirstElement(of: section) else { return }
         updateDelegate?.section(self, deselect: sectionOffset + index)
-    }
-
-    open func section(_ section: Section, move sourceIndex: Int, to destinationIndex: Int) {
-        guard let sectionOffset = indexForFirstElement(of: section) else { return }
-        updateDelegate?.section(self, move: sourceIndex + sectionOffset, to: destinationIndex + sectionOffset)
     }
 
     open func sectionDidInvalidateHeader(_ section: Section) {
@@ -381,7 +367,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
             case .sectionProvider(let childSectionProvider):
                 if childSectionProvider === sectionProvider {
                     return offset
-                } else if let aggregate = childSectionProvider as? AggregateSectionProvider, let sectionOffset = aggregate.sectionOffset(for: sectionProvider) {
+                } else if let aggregate = childSectionProvider as? ComposedSectionProvider, let sectionOffset = aggregate.sectionOffset(for: sectionProvider) {
                     return childSectionProvider.sections[0..<sectionOffset].reduce(into: offset, { $0 += $1.numberOfElements })
                 }
 
@@ -458,7 +444,7 @@ open class FlatSection: Section, CustomReflectable, SectionUpdateDelegate, Secti
             case .sectionProvider(let childSectionProvider):
                 if childSectionProvider === sectionProvider {
                     return index
-                } else if let aggregate = childSectionProvider as? AggregateSectionProvider, let offset = aggregate.sectionOffset(for: sectionProvider) {
+                } else if let aggregate = childSectionProvider as? ComposedSectionProvider, let offset = aggregate.sectionOffset(for: sectionProvider) {
                     return index + offset
                 }
 

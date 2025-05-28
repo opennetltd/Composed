@@ -13,19 +13,21 @@ concurrency:
 jobs:
   xcode_tests:
     name: Tests (Xcode ${{ matrix.xcode }})
-    runs-on: macos-13
+    runs-on: macos-14
     strategy:
       fail-fast: false
       matrix:
         include:
-          - xcode: "15.2"
-            destination: "platform=iOS Simulator,name=iPhone 14,OS=17.2"
+          - xcode: "15.1" # Swift 5.9
+            destination: "platform=iOS Simulator,name=iPhone 15,OS=17.2"
+          - xcode: "16.1" # Swift 6.0
+            destination: "platform=iOS Simulator,name=iPhone 16,OS=18.1"
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode ${{ matrix.xcode }}
-        run: sudo xcode-select --switch /Applications/Xcode_${{ matrix.xcode }}.app
+        run: sudo xcodes select ${{ matrix.xcode }}
 
       - name: Install Mint
         run: brew install mint
