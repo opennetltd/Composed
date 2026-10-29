@@ -1519,9 +1519,51 @@ final class ChangesReducerTests: XCTestCase {
         var changesReducer = ChangesReducer()
         changesReducer.beginUpdating()
 
-        changesReducer.removeGroups([1])
-        changesReducer.removeElements(at: [IndexPath(row: 1, section: 2)])
-        changesReducer.removeGroups([1])
+        // Initially four sections. Removing original section 1 shifts section 3 to index 2.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [1]
+                )
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeElements(at: [IndexPath(row: 1, section: 2)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [1]
+                )
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(row: 1, section: 3)]
+                )
+            })
+
+        // Remove original section 2. The item deletion in original section 3 must remain.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [1, 2]
+                )
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(row: 1, section: 3)]
+                )
+            })
     }
 
     func testMoveElement() {
