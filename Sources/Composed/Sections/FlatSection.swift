@@ -227,6 +227,11 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
 
     open func insert(_ section: Section, at childIndex: Int) {
         performBatchUpdates { _ in
+            #if DEBUG
+            if childIndex < 0 || childIndex > children.count {
+                assertionFailure("FlatSection.insert invalid childIndex=\(childIndex); children.count=\(children.count); caller offset corruption.")
+            }
+            #endif
             let elementOffset: Int = {
                 if childIndex == 0 {
                     return 0
@@ -246,6 +251,11 @@ open class FlatSection: Section, SectionUpdateDelegate, SectionProviderUpdateDel
                     index += sectionProvider.numberOfSections
                 }
             }
+            #if DEBUG
+            if elementOffset > numberOfElements {
+                assertionFailure("FlatSection.insert computed elementOffset=\(elementOffset) > numberOfElements=\(numberOfElements)")
+            }
+            #endif
 
             sections.insert(section, at: indexInSectionArray)
             children.insert(.section(section), at: childIndex)
