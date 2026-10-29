@@ -189,10 +189,10 @@ internal struct ChangesReducer: CustomReflectable {
                     return insertedGroup
                 })
 
+                // Element removals use original indexes, just like group removals.
+                changeset.elementsRemoved = Set(changeset.elementsRemoved.filter { $0.section != transformedRemovedGroup })
                 changeset.groupsRemoved.insert(transformedRemovedGroup)
             }
-
-            changeset.elementsRemoved = Set(changeset.elementsRemoved.filter { $0.section != removedGroup })
 
             changeset.elementsInserted = Set(changeset.elementsInserted.compactMap { insertedIndexPath in
                 guard insertedIndexPath.section != removedGroup else { return nil }
