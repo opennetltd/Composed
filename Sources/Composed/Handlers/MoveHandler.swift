@@ -1,6 +1,7 @@
 import UIKit
 
 /// Provides element move handling for a `Section`
+@MainActor
 public protocol MoveHandler: Section {
 
     func canMove(index: Int) -> Bool

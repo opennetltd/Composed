@@ -18,24 +18,26 @@ public enum CollectionElementKind {
 }
 
 /// Defines an element used by a `CollectionSection` to provide configurations for a cell, header and/or footer.
+@MainActor
 public protocol CollectionElement {
     /// The method to use for registering and dequeueing a view for this element
     var dequeueMethod: AnyDequeueMethod { get }
 
     /// A closure that will be called whenever the elements view needs to be configured
-    var configure: (UICollectionReusableView, Int, Section) -> Void { get }
+    var configure: @MainActor (UICollectionReusableView, Int, Section) -> Void { get }
 
     /// The reuseIdentifier to use for this element
     var reuseIdentifier: String { get }
 
     /// A closure that will be called before the elements view is appeared
-    var willAppear: ((UICollectionReusableView, Int, Section) -> Void)? { get }
+    var willAppear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)? { get }
 
     /// A closure that will be called after the elements view has disappeared
-    var didDisappear: ((UICollectionReusableView, Int, Section) -> Void)? { get }
+    var didDisappear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)? { get }
+
 }
 
 extension CollectionElement {
-    public var willAppear: ((UICollectionReusableView, Int, Section) -> Void)? { nil }
-    public var didDisappear: ((UICollectionReusableView, Int, Section) -> Void)? { nil }
+    public var willAppear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)? { nil }
+    public var didDisappear: (@MainActor (UICollectionReusableView, Int, Section) -> Void)? { nil }
 }

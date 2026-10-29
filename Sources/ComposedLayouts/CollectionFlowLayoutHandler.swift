@@ -2,7 +2,7 @@ import UIKit
 import ComposedUI
 
 /// Encapsulates the metrics for a section
-public struct CollectionFlowLayoutMetrics {
+public struct CollectionFlowLayoutMetrics: Sendable {
     /// Represents the insets applied to the section
     public var contentInsets: UIEdgeInsets = .zero
     /// Represents the spacing between lines in a section
@@ -14,6 +14,7 @@ public struct CollectionFlowLayoutMetrics {
 }
 
 /// Represents the current environment for a `UICollectionView`
+@MainActor
 public struct CollectionFlowLayoutEnvironment {
     /// Returns the current size of ``collectionView``, minus horizontal content insets.
     public var contentSize: CGSize {
@@ -48,6 +49,7 @@ public struct CollectionFlowLayoutEnvironment {
 }
 
 /// Conform your section to this protocol to override sizing and metric values for a `UICollectionViewFlowLayout`
+@MainActor
 public protocol CollectionFlowLayoutHandler: UICollectionViewSection {
 
     /// Return the size for the element at the specified index

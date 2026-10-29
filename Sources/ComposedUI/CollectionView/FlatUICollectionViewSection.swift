@@ -2,6 +2,7 @@ import Composed
 import UIKit
 
 /// A `Composed.FlatSection` conforming to `UICollectionViewSection`
+@MainActor
 open class FlatUICollectionViewSection: FlatSection, UICollectionViewSection {
     public var header: CollectionSupplementaryElement? {
         didSet {
@@ -49,6 +50,20 @@ extension FlatUICollectionViewSection: CollectionSelectionHandler {
             section.didDeselect(at: sectionIndex, cell: cell)
         } else if let section = sectionMeta.section as? SelectionHandler {
             section.didDeselect(at: sectionIndex)
+        }
+    }
+}
+
+extension FlatUICollectionViewSection: CollectionUpdateMethodProvider {
+    public func updateMethod(forElementAt index: Int) -> CellUpdateMethod {
+        guard let sectionMeta = self.sectionForElementIndex(index) else { return .reload }
+
+        let sectionIndex = index - sectionMeta.offset
+
+        if let section = sectionMeta.section as? CollectionUpdateMethodProvider {
+            return section.updateMethod(forElementAt: sectionIndex)
+        } else {
+            return .reload
         }
     }
 }

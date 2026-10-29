@@ -1,6 +1,7 @@
 import UIKit
 import Composed
 
+@MainActor
 open class FlatUICollectionViewSectionElementsProvider: UICollectionViewSectionElementsProvider {
     /// The header configuration element
     public var header: CollectionSupplementaryElement? {

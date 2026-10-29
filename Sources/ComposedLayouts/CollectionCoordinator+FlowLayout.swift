@@ -2,7 +2,6 @@ import UIKit
 import ComposedUI
 
 extension CollectionCoordinator: UICollectionViewDelegateFlowLayout {
-
     private func suggestedMetrics(for layout: UICollectionViewFlowLayout) -> CollectionFlowLayoutMetrics {
         var metrics = CollectionFlowLayoutMetrics()
         metrics.contentInsets = layout.sectionInset

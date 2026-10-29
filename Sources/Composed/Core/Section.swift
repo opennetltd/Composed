@@ -2,6 +2,7 @@ import Foundation
 import CoreGraphics
 
 /// Represents a single section of data.
+@MainActor
 public protocol Section: AnyObject {
     /// The number of elements in this section
     var numberOfElements: Int { get }
@@ -37,6 +38,7 @@ public extension Section {
 }
 
 /// A delegate that will respond to update events from a `Section`
+@MainActor
 public protocol SectionUpdateDelegate: AnyObject {
     /// Notifies the delegate that the section will perform a series of updates.
     ///
@@ -90,13 +92,6 @@ public protocol SectionUpdateDelegate: AnyObject {
     ///   - section: The section where the deselection should be performed
     ///   - index: The index of the element that should be deselected
     func section(_ section: Section, deselect index: Int)
-
-    /// Notifies the delegate that the source index should be moved to the destination index
-    /// - Parameters:
-    ///   - section: The section where the move should be performed
-    ///   - sourceIndex: The initial index where the element will be moved from
-    ///   - destinationIndex: The final index where the element will be moved to
-    func section(_ section: Section, move sourceIndex: Int, to destinationIndex: Int)
 
     /// Notifies the delegate that the section invalidated its header.
     /// - Parameters:
