@@ -1475,6 +1475,731 @@ final class ChangesReducerTests: XCTestCase {
             })
     }
 
+    func testInsertElementThenRemoveSurroundingGroups() {
+        // Initially A, B, C; change an item in B, then remove A, C, and finally B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Change B at current section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // B moves to section 0; move sources remain in original coordinates.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Remove C using its current index, preserving B's change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 2]
+                )
+            })
+
+        // Removing B subsumes its item change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 1, 2]
+                )
+            })
+    }
+
+    func testInsertElementThenInsertAndRemoveEarlierGroup() {
+        // Initially A, B; insert X at B's current index, then remove X and B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Change B at current section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // Insert X exactly at B's index; B shifts to section 2.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [IndexPath(item: 0, section: 2)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // Cancel X's insertion; B returns to section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // Removing B subsumes its item change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [1]
+                )
+            })
+    }
+
+    func testRemoveEarlierGroupThenInsertElementThenRemoveLaterGroup() {
+        // Initially A, B, C; change B after its current section index has shifted.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Remove A; B is now section 0.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Change B using its current index; a move's source maps back to original section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertElements(at: [IndexPath(item: 0, section: 0)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Remove C without dropping B's change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsInserted,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 2]
+                )
+            })
+    }
+
+    func testInsertElementInInsertedGroupThenRemoveGroup() {
+        // Initially A; insert B, change one of its items, then remove B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Insert B with its initial items.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // The section insertion already accounts for B's final contents.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // Cancel B's insertion; no item operations remain.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { _ in })
+    }
+
+    func testReloadElementThenRemoveSurroundingGroups() {
+        // Initially A, B, C; change an item in B, then remove A, C, and finally B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Change B at current section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.updateElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // B moves to section 0; move sources remain in original coordinates.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Remove C using its current index, preserving B's change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 2]
+                )
+            })
+
+        // Removing B subsumes its item change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 1, 2]
+                )
+            })
+    }
+
+    func testReloadElementThenInsertAndRemoveEarlierGroup() {
+        // Initially A, B; insert X at B's current index, then remove X and B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Change B at current section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.updateElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // Insert X exactly at B's index; B shifts to section 2.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [IndexPath(item: 0, section: 2)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // Cancel X's insertion; B returns to section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // Removing B subsumes its item change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [1]
+                )
+            })
+    }
+
+    func testRemoveEarlierGroupThenReloadElementThenRemoveLaterGroup() {
+        // Initially A, B, C; change B after its current section index has shifted.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Remove A; B is now section 0.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Change B using its current index; a move's source maps back to original section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.updateElements(at: [IndexPath(item: 0, section: 0)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Remove C without dropping B's change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsUpdated,
+                    [IndexPath(item: 0, section: 0)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 2]
+                )
+            })
+    }
+
+    func testReloadElementInInsertedGroupThenRemoveGroup() {
+        // Initially A; insert B, change one of its items, then remove B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Insert B with its initial items.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // The section insertion already accounts for B's final contents.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.updateElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // Cancel B's insertion; no item operations remain.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { _ in })
+    }
+
+    func testMoveElementThenRemoveSurroundingGroups() {
+        // Initially A, B, C; change an item in B, then remove A, C, and finally B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Change B at current section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.moveElements([(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 1))])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsMoved,
+                    [Changeset.Move(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 1))]
+                )
+            })
+
+        // B moves to section 0; move sources remain in original coordinates.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsMoved,
+                    [Changeset.Move(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 0))]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Remove C using its current index, preserving B's change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsMoved,
+                    [Changeset.Move(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 0))]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 2]
+                )
+            })
+
+        // Removing B subsumes its item change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 1, 2]
+                )
+            })
+    }
+
+    func testMoveElementThenInsertAndRemoveEarlierGroup() {
+        // Initially A, B; insert X at B's current index, then remove X and B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Change B at current section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.moveElements([(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 1))])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsMoved,
+                    [Changeset.Move(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 1))]
+                )
+            })
+
+        // Insert X exactly at B's index; B shifts to section 2.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsMoved,
+                    [Changeset.Move(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 2))]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // Cancel X's insertion; B returns to section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsMoved,
+                    [Changeset.Move(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 1))]
+                )
+            })
+
+        // Removing B subsumes its item change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [1]
+                )
+            })
+    }
+
+    func testRemoveEarlierGroupThenMoveElementThenRemoveLaterGroup() {
+        // Initially A, B, C; change B after its current section index has shifted.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Remove A; B is now section 0.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Change B using its current index; a move's source maps back to original section 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.moveElements([(from: IndexPath(item: 0, section: 0), to: IndexPath(item: 1, section: 0))])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsMoved,
+                    [Changeset.Move(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 0))]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Remove C without dropping B's change.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsMoved,
+                    [Changeset.Move(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 0))]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 2]
+                )
+            })
+    }
+
+    func testMoveElementInInsertedGroupThenRemoveGroup() {
+        // Initially A; insert B, change one of its items, then remove B.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Insert B with its initial items.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // The section insertion already accounts for B's final contents.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.moveElements([(from: IndexPath(item: 0, section: 1), to: IndexPath(item: 1, section: 1))])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // Cancel B's insertion; no item operations remain.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { _ in })
+    }
+
+    func testRemoveElementThenInsertAndRemoveGroupAtOriginalIndex() {
+        // Initially A, B; deleting a newly inserted X must preserve B's original-index item removal.
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Remove B's item.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // Insert X at B's original index.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 1)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsInserted,
+                    [1]
+                )
+            })
+
+        // Cancel X without discarding B's deletion.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // Removing B now subsumes its item deletion.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [1]
+                )
+            })
+    }
+
     func testRemoveElementThenRemoveSurroundingGroupsTogether() {
         /**
          Assumed to start with A = [a], B = [b], C = [c].
