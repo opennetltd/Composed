@@ -787,6 +787,49 @@ final class FlatSection_Spec: AsyncSpec {
                     expect(mockDelegate.didRemoveElementCalls[1].index) == 0
                 }
             }
+
+            // MARK: - Crash Reproduction
+
+            // This test intentionally reproduces the scenario that can lead to a crash inside
+            // `FlatSection.remove(_ section:)` / subsequent provider callbacks where
+            // `indexForFirstElement(of:)` returns nil and is force-unwrapped.
+            // DO NOT enable this test in normal runs unless you are validating the fix, as it will
+            // crash the process (runtime trap on force unwrap of nil).
+            // To run it, change `xit` to `it`.
+            xit("reproduces crash when a section exists both directly and via provider then provider removes it") { @MainActor in
+                let global = FlatSection()
+                let provider = ComposedSectionProvider()
+                let section = ArraySection<String>(elements: ["a", "b"]) // Section S
+
+                // 1. Provider contains section S
+                provider.append(section)
+
+                // 2. FlatSection first appends provider (sections = [S])
+                global.append(provider)
+
+                // 3. Same Section instance appended directly (sections = [S, S])
+                global.append(section)
+
+                // 4. Remove the direct child section. Implementation filters ALL matching
+                //    identities, removing both copies from `sections` but only one from `children`.
+                //    Now: children = [.sectionProvider(provider)], sections = [] (out of sync)
+                global.remove(section)
+
+                // 5. Provider removes the section S. This triggers
+                //    `provider(_:didRemoveSections:at:)` in FlatSection, which force-unwraps
+                //    `indexForFirstElement(of: section)!` for S that is no longer in `sections`,
+                //    causing a crash.
+                //    Crash occurs here.
+                provider.remove(section)
+
+                // If the code above does NOT crash (after a future fix), we can assert consistency:
+                if global.indexForFirstElement(of: section) == nil {
+                    // After fix we would expect it to still be nil because S was removed, but the
+                    // call should not have crashed. This assertion is just a placeholder so the
+                    // compiler doesn't warn about unused variables when the crash is fixed.
+                    expect(true).to(beTrue())
+                }
+            }
         }
     }
 
