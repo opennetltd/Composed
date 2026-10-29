@@ -1418,6 +1418,103 @@ final class ChangesReducerTests: XCTestCase {
             })
     }
 
+    func testRemoveElementThenRemoveEarlierGroupThenRemoveLaterGroup() {
+        /**
+         Assumed to start with A = [a], B = [b], C = [c].
+         B survives, but its item is removed. Element removals must retain their original
+         section index even after removing A shifts B and C to lower indexes.
+         */
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Remove b: A = [a], B = [], C = [c].
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // Remove A: B = [], C = [c]. C now has current index 1.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 1)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0]
+                )
+            })
+
+        // Remove C: B = []. C's current index must not erase B's original-index item deletion.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 1)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 2]
+                )
+            })
+    }
+
+    func testRemoveElementThenRemoveSurroundingGroupsTogether() {
+        /**
+         Assumed to start with A = [a], B = [b], C = [c].
+         B survives, but its item is removed. Element removals must retain their original
+         section index even after removing A shifts B and C to lower indexes.
+         */
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        // Remove b: A = [a], B = [], C = [c].
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeElements(at: [IndexPath(item: 0, section: 1)])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 1)]
+                )
+            })
+
+        // Remove A and C together: B = []. This is the control for separate removals.
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0, 2])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.elementsRemoved,
+                    [IndexPath(item: 0, section: 1)]
+                )
+                XCTAssertEqual(
+                    changeset.groupsRemoved,
+                    [0, 2]
+                )
+            })
+    }
+
     func testRemoveSectionThenRemoveElementThenRemoveSection() {
         var changesReducer = ChangesReducer()
         changesReducer.beginUpdating()
