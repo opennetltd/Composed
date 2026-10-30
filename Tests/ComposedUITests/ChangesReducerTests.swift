@@ -7217,6 +7217,15 @@ private final class ChangesetChecker {
                 line: line
             )
         }
+        if !checkedKeyPaths.contains(\Changeset.supplementaryViewUpdates) {
+            XCTAssertEqual(
+                changeset.supplementaryViewUpdates,
+                [],
+                "No supplementary views should have been updated",
+                file: file,
+                line: line
+            )
+        }
     }
 
     subscript<Value>(dynamicMember keyPath: KeyPath<Changeset, Value>) -> Value {
