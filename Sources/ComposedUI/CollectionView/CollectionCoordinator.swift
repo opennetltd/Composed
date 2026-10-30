@@ -870,7 +870,7 @@ extension CollectionCoordinator {
         }
 
         context.invalidateSupplementaryElements(
-            ofKind: UICollectionView.elementKindSectionHeader,
+            ofKind: kind,
             at: [indexPath]
         )
         invalidateLayout(with: context)
@@ -901,6 +901,25 @@ extension CollectionCoordinator {
             debugLog("Configuring existing header view of kind \(kind) at \(indexPath): \(headerView)")
             #endif
             header.configure(headerView, indexPath.section, section)
+        } else if kind == UICollectionView.elementKindSectionFooter {
+            guard let footer = elementsProvider.footer else {
+                assertionFailure("Asking to reload footer at \(indexPath) but \(elementsProvider) from \(section) did not supply a footer")
+                return
+            }
+
+            guard footer.kind.rawValue == kind else {
+                assertionFailure("Asking to reload footer at \(indexPath) but \(elementsProvider) from \(section) did supply a footer of kind \(footer.kind.rawValue), not \(kind)")
+                return
+            }
+
+            guard let footerView = collectionView.supplementaryView(forElementKind: kind, at: indexPath) else {
+                assertionFailure("Collection view said that supplementary element of kind \(kind) is visible at \(indexPath) but it did not return a view")
+                return
+            }
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+            debugLog("Configuring existing footer view of kind \(kind) at \(indexPath): \(footerView)")
+            #endif
+            footer.configure(footerView, indexPath.section, section)
         }
     }
 }
