@@ -796,7 +796,7 @@ extension CollectionCoordinator: SectionUpdateDelegate {
         guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
 
         if isPerformingUpdates {
-            changesReducer.reloadHeader(IndexPath(item: 0, section: sectionIndex))
+            changesReducer.reloadSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex))
         } else {
             collectionView.performBatchUpdates {
                 // Ensure elements provider is available, views have been registered, etc.

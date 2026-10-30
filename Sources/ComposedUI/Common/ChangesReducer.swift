@@ -334,9 +334,8 @@ internal struct ChangesReducer: CustomReflectable {
         moveElements(moves.map { Changeset.Move(from: $0.from, to: $0.to) })
     }
 
-    @MainActor
-    internal mutating func reloadHeader(_ indexPath: IndexPath) {
-        changeset.supplementaryViewUpdates.insert(Changeset.SupplementaryViewUpdate(indexPath: indexPath, kind: UICollectionView.elementKindSectionHeader))
+    internal mutating func reloadSupplementaryView(ofKind kind: String, at indexPath: IndexPath) {
+        changeset.supplementaryViewUpdates.insert(Changeset.SupplementaryViewUpdate(indexPath: indexPath, kind: kind))
     }
 
     private func transformIndexPath(_ indexPath: IndexPath) -> IndexPath {
