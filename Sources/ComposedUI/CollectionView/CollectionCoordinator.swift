@@ -793,62 +793,26 @@ extension CollectionCoordinator: SectionUpdateDelegate {
     }
     
     public func sectionDidInvalidateHeader(_ section: any Composed.Section) {
+        sectionDidInvalidateSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, in: section)
+    }
+    
+    public func sectionDidInvalidateFooter(_ section: any Composed.Section) {
+        sectionDidInvalidateSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, in: section)
+    }
+
+    private func sectionDidInvalidateSupplementaryView(ofKind kind: String, in section: any Composed.Section) {
         guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
 
+        let indexPath = IndexPath(item: 0, section: sectionIndex)
+
         if isPerformingUpdates {
-            changesReducer.reloadSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex))
+            // Supplementary updates use final section coordinates, so defer them until the active batch completes.
+            changesReducer.reloadSupplementaryView(ofKind: kind, at: indexPath)
         } else {
             collectionView.performBatchUpdates {
                 // Ensure elements provider is available, views have been registered, etc.
                 prepareSections()
-                reloadSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex))
-            }
-        }
-    }
-    
-    public func sectionDidInvalidateFooter(_ section: any Composed.Section) {
-        guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
-
-        // Ensure elements provider is available, views have been registered, etc.
-        prepareSections()
-
-        let elementsProvider = self.elementsProvider(for: sectionIndex)
-        let section = self.sectionProvider.sections[sectionIndex]
-
-        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
-        debugLog("Section \(sectionIndex) invalidated footer")
-        #endif
-
-        func reloadFooter() {
-            let context = UICollectionViewFlowLayoutInvalidationContext()
-            context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionFooter, at: [IndexPath(item: 0, section: sectionIndex)])
-            invalidateLayout(with: context)
-
-            // Even when invalidating the layout the collection view may not
-            // request the view again, so it won't be reconfigured. Maybe it
-            // will only request the view again if the size changes?
-            if
-                let footerView = collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionFooter, at: IndexPath(item: 0, section: sectionIndex)),
-                let footer = elementsProvider.footer,
-                footer.kind.rawValue == UICollectionView.elementKindSectionFooter
-            {
-                footer.configure(footerView, sectionIndex, section)
-            }
-        }
-
-        // The footer reload should always be inside a `performBatchUpdates` to prevent a "flash"
-        // from occurring when refreshing, but if the update is inside a nested
-        // `performBatchUpdates` it can cause some of the indexes to be incorrect. This could be a
-        // bug within the caller, but I think it's more likely that calling `performBatchUpdates`
-        // can trigger a layout update, but being mid-update means the indexes are not yet all in
-        // sync with what the collection view knows.
-        if isPerformingUpdates {
-            reloadFooter()
-        } else {
-            isPerformingUpdates = true
-            collectionView.performBatchUpdates {
-                reloadFooter()
-                isPerformingUpdates = false
+                reloadSupplementaryView(ofKind: kind, at: indexPath)
             }
         }
     }
