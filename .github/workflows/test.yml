@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   xcode_tests:
-    name: Tests (Xcode ${{ matrix.xcode }})
+    name: Tests (Xcode ${{ matrix.xcode }}; iOS ${{ matrix.ios-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
