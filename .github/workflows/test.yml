@@ -78,9 +78,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.mint
-          key: ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}-${{ hashFiles('**/Mintfile') }}
+          key: ${{ runner.os }}-mint-${{ hashFiles('**/Mintfile') }}
           restore-keys: |
-            ${{ runner.os }}-mint-xcode_${{ matrix.xcode }}
+            ${{ runner.os }}-mint-
 
       - run: mint bootstrap
 
