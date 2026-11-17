@@ -542,9 +542,7 @@ open class CollectionCoordinator: NSObject {
                     }
                 }
                 collectionView.reloadItems(at: reloads)
-                if #available(iOS 15, *) {
-                    collectionView.reconfigureItems(at: reconfigures)
-                }
+                collectionView.reconfigureItems(at: reconfigures)
 
                 #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
                 debugLog("Item reload updates have been applied")
@@ -740,13 +738,7 @@ extension CollectionCoordinator: SectionUpdateDelegate {
             case .reload:
                 collectionView.reloadItems(at: [indexPath])
             case .reconfigure:
-                if #available(iOS 15, *) {
-                    collectionView.reconfigureItems(at: [indexPath])
-                } else if let cell = collectionView.cellForItem(at: indexPath) {
-                    cachedElementsProviders[indexPath.section]
-                        .cell(for: indexPath.item)
-                        .configure(cell, indexPath.item, sectionProvider.sections[indexPath.section])
-                }
+                collectionView.reconfigureItems(at: [indexPath])
             }
         }
     }
