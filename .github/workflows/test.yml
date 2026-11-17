@@ -75,7 +75,13 @@ jobs:
 
       - name: Create ${{ matrix.device }} (${{ matrix.ios-version }}) Simulator
         if: ${{ matrix.platform-requires-installation }}
-        run: xcrun simctl create "${{ matrix.device }}" "${{ matrix.device }}" "$IOS_RUNTIME"
+        run: |
+          SIMULATOR_DESTINATION=$(xcrun simctl create "${{ matrix.device }}" "${{ matrix.device }}" "$IOS_RUNTIME")
+          echo "SIMULATOR_DESTINATION=$SIMULATOR_DESTINATION" >> $GITHUB_ENV
+
+      - name: Populate SIMULATOR_DESTINATION
+        if: ${{ !matrix.platform-requires-installation }}
+        run: echo "SIMULATOR_DESTINATION=platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios-version }}" >> $GITHUB_ENV
 
       - name: Install Mint
         run: brew install mint
@@ -99,4 +105,4 @@ jobs:
             ${{ runner.os }}-swiftpm-
 
       - name: Run Tests
-        run: set -o pipefail && xcodebuild test -scheme Composed-Package -destination 'platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios-version }}' 2>&1 | $(mint which xcbeautify) --renderer github-actions
+        run: set -o pipefail && xcodebuild test -scheme Composed-Package -destination "$SIMULATOR_DESTINATION" 2>&1 | $(mint which xcbeautify) --renderer github-actions
