@@ -58,7 +58,7 @@ jobs:
             device: "iPhone 18 Pro"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select Xcode ${{ matrix.xcode }}
         run: sudo xcode-select --switch "/Applications/Xcode_${{ matrix.xcode }}.app"
@@ -75,7 +75,7 @@ jobs:
         run: brew install mint
 
       - name: Cache Mint
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: ~/.mint
           key: ${{ runner.os }}-mint-${{ hashFiles('**/Mintfile') }}
@@ -85,7 +85,7 @@ jobs:
       - run: mint bootstrap
 
       - name: Cache SwiftPM
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: ~/Library/Caches/org.swift.swiftpm
           key: ${{ runner.os }}-swiftpm-${{ hashFiles('Package.swift', 'Package@swift-*.swift', 'Package.resolved') }}
