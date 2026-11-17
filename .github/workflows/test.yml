@@ -23,7 +23,8 @@ jobs:
         include:
           - os: "macos-26"
             xcode: "26.2"
-            ios-version: "15.0"
+            # 15.0 has a max macOS version of 14.99.0. I think 15.5 is the oldest version to support 26.x.
+            ios-version: "15.5"
             platform-requires-installation: true
             device: "iPhone 13"
           - os: "macos-26"
