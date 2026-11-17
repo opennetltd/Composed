@@ -910,6 +910,186 @@ final class ChangesReducerTests: XCTestCase {
             })
     }
 
+    func testFooterUpdatesFollowInsertedAndRemovedSections() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsInserted, [0])
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.reloadSupplementaryView(
+                    ofKind: UICollectionView.elementKindSectionFooter,
+                    at: IndexPath(item: 0, section: 1)
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsInserted, [0])
+                XCTAssertEqual(
+                    changeset.supplementaryViewUpdates,
+                    [
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 1),
+                            kind: UICollectionView.elementKindSectionFooter
+                        ),
+                    ]
+                )
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.reloadSupplementaryView(
+                    ofKind: UICollectionView.elementKindSectionHeader,
+                    at: IndexPath(item: 0, section: 1)
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsInserted, [0])
+                XCTAssertEqual(
+                    changeset.supplementaryViewUpdates,
+                    [
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 1),
+                            kind: UICollectionView.elementKindSectionHeader
+                        ),
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 1),
+                            kind: UICollectionView.elementKindSectionFooter
+                        ),
+                    ]
+                )
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.insertGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsInserted, [0, 1])
+                XCTAssertEqual(
+                    changeset.supplementaryViewUpdates,
+                    [
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 2),
+                            kind: UICollectionView.elementKindSectionHeader
+                        ),
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 2),
+                            kind: UICollectionView.elementKindSectionFooter
+                        ),
+                    ]
+                )
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0, 1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.supplementaryViewUpdates,
+                    [
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 0),
+                            kind: UICollectionView.elementKindSectionHeader
+                        ),
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 0),
+                            kind: UICollectionView.elementKindSectionFooter
+                        ),
+                    ]
+                )
+            })
+    }
+
+    func testFooterUpdatesFollowRemovedSections() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.reloadSupplementaryView(
+                    ofKind: UICollectionView.elementKindSectionFooter,
+                    at: IndexPath(item: 0, section: 1)
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.supplementaryViewUpdates,
+                    [
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 1),
+                            kind: UICollectionView.elementKindSectionFooter
+                        ),
+                    ]
+                )
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([0])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsRemoved, [0])
+                XCTAssertEqual(
+                    changeset.supplementaryViewUpdates,
+                    [
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 0),
+                            kind: UICollectionView.elementKindSectionFooter
+                        ),
+                    ]
+                )
+            })
+    }
+
+    func testFooterUpdateIsRemovedWithContainingSection() {
+        var changesReducer = ChangesReducer()
+        changesReducer.beginUpdating()
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.reloadSupplementaryView(
+                    ofKind: UICollectionView.elementKindSectionFooter,
+                    at: IndexPath(item: 0, section: 1)
+                )
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(
+                    changeset.supplementaryViewUpdates,
+                    [
+                        Changeset.SupplementaryViewUpdate(
+                            indexPath: IndexPath(item: 0, section: 1),
+                            kind: UICollectionView.elementKindSectionFooter
+                        ),
+                    ]
+                )
+            })
+
+        AssertApplyingUpdates(
+            { changesReducer in
+                changesReducer.removeGroups([1])
+            },
+            changesReducer: &changesReducer,
+            produces: { changeset in
+                XCTAssertEqual(changeset.groupsRemoved, [1])
+            })
+    }
+
     func testMultipleElementRemovals() {
         var changesReducer = ChangesReducer()
         changesReducer.beginUpdating()
