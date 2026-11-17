@@ -77,7 +77,7 @@ jobs:
         if: ${{ matrix.platform-requires-installation }}
         run: |
           SIMULATOR_DESTINATION=$(xcrun simctl create "${{ matrix.device }}" "${{ matrix.device }}" "$IOS_RUNTIME")
-          echo "SIMULATOR_DESTINATION=$SIMULATOR_DESTINATION" >> $GITHUB_ENV
+          echo "SIMULATOR_DESTINATION=platform=iOS Simulator,id=$SIMULATOR_DESTINATION" >> $GITHUB_ENV
 
       - name: Populate SIMULATOR_DESTINATION
         if: ${{ !matrix.platform-requires-installation }}
