@@ -7321,7 +7321,7 @@ private func AssertApplyingUpdates(
     changesReducer: inout ChangesReducer,
     produces resultChecker: @MainActor (ChangesetChecker) -> Void,
     file: StaticString = #filePath,
-    line: UInt = #line
+    line: UInt = #line,
 ) {
     updates(&changesReducer)
 
