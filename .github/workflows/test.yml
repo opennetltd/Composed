@@ -67,11 +67,15 @@ jobs:
 
       - name: Install iOS ${{ matrix.ios-version }}
         if: ${{ matrix.platform-requires-installation }}
-        run: xcodebuild -downloadPlatform iOS -buildVersion ${{ matrix.ios-version }}
+        env:
+            IOS_VERSION: ${{ matrix.ios-version }}
+        run: |
+          xcodebuild -downloadPlatform iOS -buildVersion ${{ matrix.ios-version }}
+          echo "IOS_RUNTIME=com.apple.CoreSimulator.SimRuntime.iOS-${IOS_VERSION/\./-}" >> $GITHUB_ENV
 
       - name: Create ${{ matrix.device }} (${{ matrix.ios-version }}) Simulator
         if: ${{ matrix.platform-requires-installation }}
-        run: xcrun simctl create "${{ matrix.device }}" "${{ matrix.device }}" "com.apple.CoreSimulator.SimRuntime.iOS-${{ format(matrix.ios-version, '.', '-') }}"
+        run: xcrun simctl create "${{ matrix.device }}" "${{ matrix.device }}" "$IOS_RUNTIME"
 
       - name: Install Mint
         run: brew install mint
