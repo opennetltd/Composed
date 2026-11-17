@@ -14,21 +14,62 @@ concurrency:
 jobs:
   xcode_tests:
     name: Tests (Xcode ${{ matrix.xcode }})
-    runs-on: macos-14
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - xcode: "15.1" # Swift 5.9
-            destination: "platform=iOS Simulator,name=iPhone 15,OS=17.2"
-          - xcode: "16.1" # Swift 6.0
-            destination: "platform=iOS Simulator,name=iPhone 16,OS=18.1"
+          - os: "macos-26"
+            xcode: "26.2"
+            ios-version: "15.0"
+            platform-requires-installation: true
+            device: "iPhone 13"
+          - os: "macos-26"
+            xcode: "26.2"
+            ios-version: "16.0"
+            platform-requires-installation: true
+            device: "iPhone 14"
+          - os: "macos-27"
+            xcode: "27.2"
+            ios-version: "17.0"
+            platform-requires-installation: true
+            device: "iPhone 15"
+          - os: "macos-27"
+            xcode: "27.2"
+            ios-version: "18.0"
+            platform-requires-installation: true
+            device: "iPhone 16"
+          - os: "macos-27"
+            xcode: "27.2"
+            ios-version: "26.0"
+            platform-requires-installation: true
+            device: "iPhone 17"
+          - os: "macos-26"
+            xcode: "26.2"
+            ios-version: "26.2"
+            device: "iPhone 17"
+          - os: "macos-27"
+            xcode: "27.0"
+            ios-version: "27.0"
+            device: "iPhone 18 Pro"
+          - os: "macos-27"
+            xcode: "27.2"
+            ios-version: "27.2"
+            device: "iPhone 18 Pro"
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode ${{ matrix.xcode }}
-        run: sudo xcodes select ${{ matrix.xcode }}
+        run: sudo xcode-select --switch "/Applications/Xcode_${{ matrix.xcode }}.app"
+
+      - name: Install iOS ${{ matrix.ios-version }}
+        if: ${{ matrix.platform-requires-installation }}
+        run: xcodebuild -downloadPlatform iOS -buildVersion ${{ matrix.ios-version }}
+
+      - name: Create ${{ matrix.device }} (${{ matrix.ios-version }}) Simulator
+        if: ${{ matrix.platform-requires-installation }}
+        run: xcrun simctl create "${{ matrix.device }}" "${{ matrix.device }}" "com.apple.CoreSimulator.SimRuntime.iOS-${{ format(matrix.ios-version, '.', '-') }}"
 
       - name: Install Mint
         run: brew install mint
@@ -52,4 +93,4 @@ jobs:
             ${{ runner.os }}-swiftpm-
 
       - name: Run Tests
-        run: set -o pipefail && xcodebuild test -scheme Composed-Package -destination '${{ matrix.destination }}' 2>&1 | $(mint which xcbeautify) --renderer github-actions
+        run: set -o pipefail && xcodebuild test -scheme Composed-Package -destination 'platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios-version }}' 2>&1 | $(mint which xcbeautify) --renderer github-actions
