@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 import PackageDescription
 
 let package = Package(
@@ -33,10 +33,17 @@ let package = Package(
         ),
         .testTarget(
             name: "ComposedTests",
-            dependencies: ["Quick", "Nimble", "Composed"]),
+            dependencies: ["Quick", "Nimble", "Composed"],
+            swiftSettings: [
+                // Quick doesn't play nice with types that need to be created on the main actor
+                // under Swift 6 mode.
+                .swiftLanguageMode(.v5),
+            ],
+        ),
         .testTarget(
             name: "ComposedPerformanceTests",
-            dependencies: ["Quick", "Nimble", "Composed"]),
+            dependencies: ["Composed"],
+        ),
 
         .target(
             name: "ComposedUI",
@@ -47,7 +54,8 @@ let package = Package(
         ),
         .testTarget(
             name: "ComposedUITests",
-            dependencies: ["Quick", "Nimble", "ComposedLayouts", "ComposedUI"]),
+            dependencies: ["Composed", "ComposedUI"]
+        ),
 
         .target(
             name: "ComposedLayouts",

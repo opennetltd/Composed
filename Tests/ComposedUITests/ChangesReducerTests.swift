@@ -1,7 +1,9 @@
-import XCTest
 import Composed
+import UIKit
+import XCTest
 @testable import ComposedUI
 
+@MainActor
 final class ChangesReducerTests: XCTestCase {
     /// Mirrors `CollectionCoordinatorTests.testBatchUpdates`
     func testBatchUpdates_Mirror() {
@@ -7133,10 +7135,11 @@ final class ChangesReducerTests: XCTestCase {
 //    }
 }
 
+@MainActor
 private func AssertApplyingUpdates(
-    _ updates: (inout ChangesReducer) -> Void,
+    _ updates: @MainActor (inout ChangesReducer) -> Void,
     changesReducer: inout ChangesReducer,
-    produces resultChecker: (ChangesetChecker) -> Void,
+    produces resultChecker: @MainActor (ChangesetChecker) -> Void,
     file: StaticString = #filePath,
     line: UInt = #line
 ) {
