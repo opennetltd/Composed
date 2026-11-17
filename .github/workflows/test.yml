@@ -43,14 +43,13 @@ jobs:
 
       - run: mint bootstrap
 
-      - name: Cache DerivedData
+      - name: Cache SwiftPM
         uses: actions/cache@v3
         with:
-          path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-${{ github.ref }}
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-swiftpm-${{ hashFiles('Package.swift', 'Package@swift-*.swift', 'Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-main
-            ${{ runner.os }}-xcode_${{ matrix.xcode }}-derived_data-
+            ${{ runner.os }}-swiftpm-
 
       - name: Run Tests
         run: set -o pipefail && xcodebuild test -scheme Composed-Package -destination '${{ matrix.destination }}' 2>&1 | $(mint which xcbeautify) --renderer github-actions
