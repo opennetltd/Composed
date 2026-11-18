@@ -127,11 +127,8 @@ internal struct ChangesReducer: CustomReflectable {
             changeset.elementsMoved = Set(changeset.elementsMoved.map { move in
                 var move = move
 
-                if move.from.section > insertedGroup {
-                    move.from.section += 1
-                }
-
-                if move.to.section > insertedGroup {
+                // Move sources use original indexes; only destinations shift.
+                if move.to.section >= insertedGroup {
                     move.to.section += 1
                 }
 
@@ -189,10 +186,10 @@ internal struct ChangesReducer: CustomReflectable {
                     return insertedGroup
                 })
 
+                // Element removals use original indexes, just like group removals.
+                changeset.elementsRemoved = Set(changeset.elementsRemoved.filter { $0.section != transformedRemovedGroup })
                 changeset.groupsRemoved.insert(transformedRemovedGroup)
             }
-
-            changeset.elementsRemoved = Set(changeset.elementsRemoved.filter { $0.section != removedGroup })
 
             changeset.elementsInserted = Set(changeset.elementsInserted.compactMap { insertedIndexPath in
                 guard insertedIndexPath.section != removedGroup else { return nil }
@@ -210,10 +207,6 @@ internal struct ChangesReducer: CustomReflectable {
                 guard move.to.section != removedGroup else { return nil }
 
                 var move = move
-
-                if move.from.section > removedGroup {
-                    move.from.section -= 1
-                }
 
                 if move.to.section > removedGroup {
                     move.to.section -= 1
@@ -325,16 +318,24 @@ internal struct ChangesReducer: CustomReflectable {
     }
 
     internal mutating func moveElements(_ moves: [Changeset.Move]) {
-        changeset.elementsMoved.formUnion(moves)
+        changeset.elementsMoved.formUnion(moves.compactMap { move in
+            // A move within an inserted group is already covered by the group insertion.
+            if move.from.section == move.to.section, changeset.groupsInserted.contains(move.from.section) {
+                return nil
+            }
+
+            var move = move
+            move.from.section = transformSection(move.from.section)
+            return move
+        })
     }
 
     internal mutating func moveElements(_ moves: [(from: IndexPath, to: IndexPath)]) {
         moveElements(moves.map { Changeset.Move(from: $0.from, to: $0.to) })
     }
 
-    @MainActor
-    internal mutating func reloadHeader(_ indexPath: IndexPath) {
-        changeset.supplementaryViewUpdates.insert(Changeset.SupplementaryViewUpdate(indexPath: indexPath, kind: UICollectionView.elementKindSectionHeader))
+    internal mutating func reloadSupplementaryView(ofKind kind: String, at indexPath: IndexPath) {
+        changeset.supplementaryViewUpdates.insert(Changeset.SupplementaryViewUpdate(indexPath: indexPath, kind: kind))
     }
 
     private func transformIndexPath(_ indexPath: IndexPath) -> IndexPath {

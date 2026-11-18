@@ -542,9 +542,7 @@ open class CollectionCoordinator: NSObject {
                     }
                 }
                 collectionView.reloadItems(at: reloads)
-                if #available(iOS 15, *) {
-                    collectionView.reconfigureItems(at: reconfigures)
-                }
+                collectionView.reconfigureItems(at: reconfigures)
 
                 #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
                 debugLog("Item reload updates have been applied")
@@ -740,13 +738,7 @@ extension CollectionCoordinator: SectionUpdateDelegate {
             case .reload:
                 collectionView.reloadItems(at: [indexPath])
             case .reconfigure:
-                if #available(iOS 15, *) {
-                    collectionView.reconfigureItems(at: [indexPath])
-                } else if let cell = collectionView.cellForItem(at: indexPath) {
-                    cachedElementsProviders[indexPath.section]
-                        .cell(for: indexPath.item)
-                        .configure(cell, indexPath.item, sectionProvider.sections[indexPath.section])
-                }
+                collectionView.reconfigureItems(at: [indexPath])
             }
         }
     }
@@ -793,62 +785,26 @@ extension CollectionCoordinator: SectionUpdateDelegate {
     }
     
     public func sectionDidInvalidateHeader(_ section: any Composed.Section) {
+        sectionDidInvalidateSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, in: section)
+    }
+    
+    public func sectionDidInvalidateFooter(_ section: any Composed.Section) {
+        sectionDidInvalidateSupplementaryView(ofKind: UICollectionView.elementKindSectionFooter, in: section)
+    }
+
+    private func sectionDidInvalidateSupplementaryView(ofKind kind: String, in section: any Composed.Section) {
         guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
 
+        let indexPath = IndexPath(item: 0, section: sectionIndex)
+
         if isPerformingUpdates {
-            changesReducer.reloadHeader(IndexPath(item: 0, section: sectionIndex))
+            // Supplementary updates use final section coordinates, so defer them until the active batch completes.
+            changesReducer.reloadSupplementaryView(ofKind: kind, at: indexPath)
         } else {
             collectionView.performBatchUpdates {
                 // Ensure elements provider is available, views have been registered, etc.
                 prepareSections()
-                reloadSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, at: IndexPath(item: 0, section: sectionIndex))
-            }
-        }
-    }
-    
-    public func sectionDidInvalidateFooter(_ section: any Composed.Section) {
-        guard let sectionIndex = sectionProvider.sectionOffset(for: section) else { return }
-
-        // Ensure elements provider is available, views have been registered, etc.
-        prepareSections()
-
-        let elementsProvider = self.elementsProvider(for: sectionIndex)
-        let section = self.sectionProvider.sections[sectionIndex]
-
-        #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
-        debugLog("Section \(sectionIndex) invalidated footer")
-        #endif
-
-        func reloadFooter() {
-            let context = UICollectionViewFlowLayoutInvalidationContext()
-            context.invalidateSupplementaryElements(ofKind: UICollectionView.elementKindSectionFooter, at: [IndexPath(item: 0, section: sectionIndex)])
-            invalidateLayout(with: context)
-
-            // Even when invalidating the layout the collection view may not
-            // request the view again, so it won't be reconfigured. Maybe it
-            // will only request the view again if the size changes?
-            if
-                let footerView = collectionView.supplementaryView(forElementKind: UICollectionView.elementKindSectionFooter, at: IndexPath(item: 0, section: sectionIndex)),
-                let footer = elementsProvider.footer,
-                footer.kind.rawValue == UICollectionView.elementKindSectionFooter
-            {
-                footer.configure(footerView, sectionIndex, section)
-            }
-        }
-
-        // The footer reload should always be inside a `performBatchUpdates` to prevent a "flash"
-        // from occurring when refreshing, but if the update is inside a nested
-        // `performBatchUpdates` it can cause some of the indexes to be incorrect. This could be a
-        // bug within the caller, but I think it's more likely that calling `performBatchUpdates`
-        // can trigger a layout update, but being mid-update means the indexes are not yet all in
-        // sync with what the collection view knows.
-        if isPerformingUpdates {
-            reloadFooter()
-        } else {
-            isPerformingUpdates = true
-            collectionView.performBatchUpdates {
-                reloadFooter()
-                isPerformingUpdates = false
+                reloadSupplementaryView(ofKind: kind, at: indexPath)
             }
         }
     }
@@ -870,7 +826,7 @@ extension CollectionCoordinator {
         }
 
         context.invalidateSupplementaryElements(
-            ofKind: UICollectionView.elementKindSectionHeader,
+            ofKind: kind,
             at: [indexPath]
         )
         invalidateLayout(with: context)
@@ -901,6 +857,25 @@ extension CollectionCoordinator {
             debugLog("Configuring existing header view of kind \(kind) at \(indexPath): \(headerView)")
             #endif
             header.configure(headerView, indexPath.section, section)
+        } else if kind == UICollectionView.elementKindSectionFooter {
+            guard let footer = elementsProvider.footer else {
+                assertionFailure("Asking to reload footer at \(indexPath) but \(elementsProvider) from \(section) did not supply a footer")
+                return
+            }
+
+            guard footer.kind.rawValue == kind else {
+                assertionFailure("Asking to reload footer at \(indexPath) but \(elementsProvider) from \(section) did supply a footer of kind \(footer.kind.rawValue), not \(kind)")
+                return
+            }
+
+            guard let footerView = collectionView.supplementaryView(forElementKind: kind, at: indexPath) else {
+                assertionFailure("Collection view said that supplementary element of kind \(kind) is visible at \(indexPath) but it did not return a view")
+                return
+            }
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+            debugLog("Configuring existing footer view of kind \(kind) at \(indexPath): \(footerView)")
+            #endif
+            footer.configure(footerView, indexPath.section, section)
         }
     }
 }
