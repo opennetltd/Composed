@@ -37,9 +37,10 @@ jobs:
           #   ios-version: "17.0"
           #   platform-requires-installation: true
           #   device: "iPhone 15"
-          - os: "xcode-27"
-            xcode: "27.2"
-            ios-version: "18.1"
+          # This could use Xcode 27.2 but some SDKs fail to download from the CLI. See https://developer.apple.com/forums/thread/847134
+          - os: "macos-26"
+            xcode: "26.6"
+            ios-version: "18.0"
             platform-requires-installation: true
             device: "iPhone 16"
           - os: "xcode-27"
