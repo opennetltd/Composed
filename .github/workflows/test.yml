@@ -78,7 +78,6 @@ jobs:
 
       - name: Create ${{ matrix.device }} (${{ matrix.ios-version }}) Simulator
         if: ${{ matrix.platform-requires-installation }}
-        shell: bash
         env:
           DEVICE: ${{ matrix.device }}
         run: |
