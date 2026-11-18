@@ -876,6 +876,26 @@ extension CollectionCoordinator {
             debugLog("Configuring existing footer view of kind \(kind) at \(indexPath): \(footerView)")
             #endif
             footer.configure(footerView, indexPath.section, section)
+        } else {
+            let supplementaryElements = elementsProvider.supplementaryElements.filter { element in
+                switch element.kind {
+                case .automatic:
+                    false
+                case .custom(let elementKind):
+                    elementKind == kind
+                }
+            }
+
+            guard let element = supplementaryElements.first else { return }
+
+            guard let elementView = collectionView.supplementaryView(forElementKind: kind, at: indexPath) else {
+                assertionFailure("Collection view said that supplementary element of kind \(kind) is visible at \(indexPath) but it did not return a view")
+                return
+            }
+            #if ENABLE_COMPOSED_DEBUG_LOGGING || DEBUG
+            debugLog("Configuring existing supplementary view of kind \(kind) at \(indexPath): \(elementView)")
+            #endif
+            element.configure(elementView, indexPath.section, section)
         }
     }
 }
@@ -990,6 +1010,11 @@ extension CollectionCoordinator: UICollectionViewDataSource {
         } else if let footer = elements.footer, footer.kind.rawValue == kind {
             let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: footer.reuseIdentifier, for: indexPath)
             footer.configure(view, indexPath.section, section)
+            return view
+        } else if let element = elements.supplementaryElements.first(where: { $0.kind.rawValue == kind }) {
+            // TODO: Avoid "automatic" raw value
+            let view = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: element.reuseIdentifier, for: indexPath)
+            element.configure(view, indexPath.section, section)
             return view
         } else {
             guard let view = originalDataSource?.collectionView?(collectionView, viewForSupplementaryElementOfKind: kind, at: indexPath) else {

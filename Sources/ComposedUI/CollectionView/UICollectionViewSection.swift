@@ -28,12 +28,17 @@ public typealias CollectionElementsProvider = UICollectionViewSectionElementsPro
 public protocol UICollectionViewSectionElementsProvider {
     var header: CollectionSupplementaryElement? { get }
     var footer: CollectionSupplementaryElement? { get }
+    var supplementaryElements: [CollectionSupplementaryElement] { get }
     var numberOfElements: Int { get }
 
     func cell(for index: Int) -> CollectionCellElement
 }
 
 extension UICollectionViewSectionElementsProvider {
+    public var supplementaryElements: [CollectionSupplementaryElement] {
+        []
+    }
+
     public var isEmpty: Bool { return numberOfElements == 0 }
 }
 
