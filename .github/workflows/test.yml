@@ -100,7 +100,7 @@ jobs:
             exit 1
           fi
 
-          echo "SIMULATOR_DESTINATION=$SIMULATOR_DESTINATION" >> "$GITHUB_ENV"
+          echo "SIMULATOR_DESTINATION=platform=iOS Simulator,id=$SIMULATOR_DESTINATION" >> $GITHUB_ENV
 
       - name: Populate SIMULATOR_DESTINATION
         if: ${{ !matrix.platform-requires-installation }}
