@@ -76,9 +76,30 @@ jobs:
 
       - name: Create ${{ matrix.device }} (${{ matrix.ios-version }}) Simulator
         if: ${{ matrix.platform-requires-installation }}
+        shell: bash
+        env:
+          DEVICE: ${{ matrix.device }}
         run: |
-          SIMULATOR_DESTINATION=$(xcrun simctl create "${{ matrix.device }}" "${{ matrix.device }}" "$IOS_RUNTIME")
-          echo "SIMULATOR_DESTINATION=platform=iOS Simulator,id=$SIMULATOR_DESTINATION" >> $GITHUB_ENV
+          set -euo pipefail
+
+          echo "Device: $DEVICE"
+          echo "Runtime: $IOS_RUNTIME"
+
+          if SIMULATOR_DESTINATION=$(xcrun simctl create "$DEVICE" "$DEVICE" "$IOS_RUNTIME"); then
+            echo "Created simulator: $SIMULATOR_DESTINATION"
+          else
+            status=$?
+            echo "::error::simctl create failed with exit code $status"
+            exit "$status"
+          fi
+
+          if [[ -z "$SIMULATOR_DESTINATION" ]]; then
+            xcrun simctl list devices available
+            echo "::error::simctl create succeeded but returned no UUID"
+            exit 1
+          fi
+
+          echo "SIMULATOR_DESTINATION=$SIMULATOR_DESTINATION" >> "$GITHUB_ENV"
 
       - name: Populate SIMULATOR_DESTINATION
         if: ${{ !matrix.platform-requires-installation }}
