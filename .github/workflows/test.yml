@@ -71,6 +71,7 @@ jobs:
         env:
             IOS_VERSION: ${{ matrix.ios-version }}
         run: |
+          xcodes runtimes
           sudo xcodes runtimes install "iOS ${{ matrix.ios-version }}"
           echo "IOS_RUNTIME=com.apple.CoreSimulator.SimRuntime.iOS-${IOS_VERSION/\./-}" >> $GITHUB_ENV
 
