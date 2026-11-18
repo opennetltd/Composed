@@ -21,22 +21,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: "macos-26"
-          #   xcode: "26.2"
-          #   # 15.0 has a max macOS version of 14.99.0. I think 15.5 is the oldest version to support 26.x.
-          #   ios-version: "15.5"
-          #   platform-requires-installation: true
-          #   device: "iPhone 13"
-          # - os: "macos-26"
-          #   xcode: "26.2"
-          #   ios-version: "16.0"
-          #   platform-requires-installation: true
-          #   device: "iPhone 14"
-          # - os: "xcode-27"
-          #   xcode: "27.2"
-          #   ios-version: "17.0"
-          #   platform-requires-installation: true
-          #   device: "iPhone 15"
+          - os: "macos-26"
+            xcode: "26.2"
+            # 15.0 has a max macOS version of 14.99.0. I think 15.5 is the oldest version to support 26.x.
+            ios-version: "15.5"
+            platform-requires-installation: true
+            device: "iPhone 13"
+          - os: "macos-26"
+            xcode: "26.2"
+            ios-version: "16.0"
+            platform-requires-installation: true
+            device: "iPhone 14"
+          - os: "xcode-27"
+            xcode: "27.2"
+            ios-version: "17.0"
+            platform-requires-installation: true
+            device: "iPhone 15"
           # This could use Xcode 27.2 but some SDKs fail to download from the CLI. See https://developer.apple.com/forums/thread/847134
           - os: "macos-26"
             xcode: "26.6"
@@ -48,18 +48,18 @@ jobs:
             ios-version: "26.0"
             platform-requires-installation: true
             device: "iPhone 17"
-          # - os: "macos-26"
-          #   xcode: "26.2"
-          #   ios-version: "26.2"
-          #   device: "iPhone 17"
-          # - os: "xcode-27"
-          #   xcode: "27.0"
-          #   ios-version: "27.0"
-          #   device: "iPhone 18 Pro"
-          # - os: "xcode-27"
-          #   xcode: "27.2"
-          #   ios-version: "27.2"
-          #   device: "iPhone 18 Pro"
+          - os: "macos-26"
+            xcode: "26.2"
+            ios-version: "26.2"
+            device: "iPhone 17"
+          - os: "xcode-27"
+            xcode: "27.0"
+            ios-version: "27.0"
+            device: "iPhone 18 Pro"
+          - os: "xcode-27"
+            xcode: "27.2"
+            ios-version: "27.2"
+            device: "iPhone 18 Pro"
 
     steps:
       - uses: actions/checkout@v7
