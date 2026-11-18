@@ -39,7 +39,7 @@ jobs:
           #   device: "iPhone 15"
           - os: "xcode-27"
             xcode: "27.2"
-            ios-version: "18.0"
+            ios-version: "18.1"
             platform-requires-installation: true
             device: "iPhone 16"
           - os: "xcode-27"
