@@ -131,4 +131,4 @@ jobs:
             ${{ runner.os }}-swiftpm-
 
       - name: Run Tests
-        run: set -o pipefail && xcodebuild test -scheme Composed-Package -destination "$SIMULATOR_DESTINATION" 2>&1 | $(mint which xcbeautify) --renderer github-actions preserve-unbeautified
+        run: set -o pipefail && xcodebuild test -scheme Composed-Package -destination "$SIMULATOR_DESTINATION" 2>&1 | $(mint which xcbeautify) --renderer github-actions --preserve-unbeautified
